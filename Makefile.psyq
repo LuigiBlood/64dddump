@@ -1,0 +1,31 @@
+ROOTDIR = C:/n64
+BINDIR = $(ROOTDIR)/bin
+
+CC = $(BINDIR)/ccn64
+AS = $(BINDIR)/asmn64
+LD = $(BINDIR)/psylink
+
+C_FLAGS = -DF3DEX_GBI_2 -I. -IC:/n64/include/OS20L -mgpopt -O3  -c
+
+OBJS = \
+	snmain.obj \
+	cfb.obj \
+	main.obj \
+	nu64sys.obj \
+	textlib.obj \
+	asci.obj \
+	ci.obj \
+	fat32.obj 
+
+%.obj : %.c 
+	@echo - $*.c
+	@$(CC) $(C_FLAGS) $*.c 
+	
+%.obj : %.s 
+	@$(AS) /zd /l /or+ /ow- /g $*,$*
+		
+demo.bin : $(OBJS) 
+	@$(LD) /p /m /c /s @demo.lk,demo.bin,demo.sym,demo.map 
+
+
+all: demo.bin 

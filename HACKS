@@ -1,0 +1,99 @@
+These are all the hacks you need to be able to dump properly.
+You can easily search for the first 6 bytes and then go to the relative offset for the bytes to change.
+
+
+* ------- ACCESS SYSTEM LBAS ------- *
+Title says it all.
+
+
+0000000000000000 <leoRead>:
+   0:   27bdffe8        addiu   $sp,$sp,-24
+   4:   3c0e0000        lui     $t6,0x0
+   8:   afbf0014        sw      $ra,20($sp)
+   c:   25ce0000        addiu   $t6,$t6,0
+  10:   a5c00000        sh      $zero,0($t6)
+  14:   0c000000        jal     0 <leoRead>
+  18:   24040018        li      $a0,24
+  1c:   8fbf0014        lw      $ra,20($sp)
+  20:   27bd0018        addiu   $sp,$sp,24
+  24:   03e00008        jr      $ra
+  28:   00000000        nop
+ 
+Change
+  18:   24040018        li      $a0,24
+to
+  18:   24040000        li      $a0,0
+
+
+
+* ------- FORCE 64DD DETECTION ------- *
+Mostly to force development drive to work.
+
+
+0000000000000000 <LeoCJCreateLeoManager>:
+   0:   27bdff78        addiu   $sp,$sp,-136
+   4:   3c0e0000        lui     $t6,0x0
+   8:   8dce0000        lw      $t6,0($t6)
+   c:   afbf0014        sw      $ra,20($sp)
+  10:   afa40088        sw      $a0,136($sp)
+  14:   afa5008c        sw      $a1,140($sp)
+	...
+
+ Change
+   34:  14400003        bnez    $v0,44 <LeoCJCreateLeoManager+0x44>		//detect 64DD hardware
+   1a0: 1461001d        bne     $v1,$at,218 <LeoCJCreateLeoManager+0x218>
+   1e0: 1000ffff        b               1e0 <LeoCJCreateLeoManager+0x1e0>	//64DD region
+   1f4: 03030019        multu   $t8,$v1
+ to
+   34:  10000003        b               44 <LeoCJCreateLeoManager+0x44>
+   1a0: 14610000        bne     $v1,$at,1a4 <LeoCJCreateLeoManager+0x1a4>
+   1e0: 10000000        b               1e4 <LeoCJCreateLeoManager+0x1e4>
+   1f4: 03240019        multu   $t8,$at
+
+
+
+* ------- IGNORE 64DD DETAILS ------- *
+Ignore ID_REG and upper nibble of disk.
+
+
+0000000000000000 <leomain>:
+   0:   27bdffb8        addiu   $sp,$sp,-72
+   4:   afbf0024        sw      $ra,36($sp)
+   8:   afb30020        sw      $s3,32($sp)
+   c:   afb2001c        sw      $s2,28($sp)
+  10:   afb10018        sw      $s1,24($sp)
+  14:   afb00014        sw      $s0,20($sp)
+	...
+
+ Change
+        330:    1000ffff        b       330 <leomain+0x330>
+        398:    15a10008        bne     $t5,$at,3bc <leomain+0x3bc>
+ to
+        330:    10000000        b       334 <leomain+0x334>             //Not care about development drive
+        398:    00000000        nop                                     //Not care about upper nibble of disk type
+
+
+
+* ------- DEVELOPMENT DISK SUPPORT ------- *
+Makes the SDK support development disks at once without much effort.
+NOTICE THAT IT BEGINS WITH THE RELATIVE OFFSET 0x47C. Subtract 0x47C!
+
+
+000000000000047c <leoRead_system_area>:
+ 47c:   27bdff88        addiu   $sp,$sp,-120
+ 480:   3c050000        lui     $a1,0x0
+ 484:   24a50000        addiu   $a1,$a1,0
+ 488:   8cae0000        lw      $t6,0($a1)
+ 48c:   afb70034        sw      $s7,52($sp)
+ 490:   afb5002c        sw      $s5,44($sp)
+ 494:   afb40028        sw      $s4,40($sp)
+	...
+
+PATCH FOR BLUE DISKS (thx Zoinkity)
+ 578:   1440ffff        bnez    $v0,578 <leoRead_system_area+0xfc>
+ 594:   1040ffff        beqz    $v0,594 <leoRead_system_area+0x118>
+ 5ec:   1443ffff        bne     $v0,$v1,5ec <leoRead_system_area+0x170>
+to
+ 578:   14400000        bnez    $v0,57c <leoRead_system_area+0x100>
+ 594:   10400000        beqz    $v0,598 <leoRead_system_area+0x11c>
+ 5ec:   14430000        bne     $v0,$v1,5f0 <leoRead_system_area+0x174>
