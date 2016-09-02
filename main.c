@@ -358,7 +358,7 @@ int isDiskChanged()
 int isDiskDebug()
 {
   LeoInquiry(&_leover);
-  if (_leover.drive == 0x04)
+  if ((_leover.drive & 0x0F) == 0x04)
     return 1; //DEVELOPMENT DRIVE
   else
     return 0; //RETAIL DRIVE
@@ -429,9 +429,9 @@ mainproc(void *arg)
     
     setcolor(0,255,0);
     if (isDiskDebug() == 0)
-      draw_puts("\f\n    64DD dump v0.56 (Gray disk) by LuigiBlood & marshallh\n    ----------------------------------------\n");
+      draw_puts("\f\n    64DD dump v0.57 (Gray disk) by LuigiBlood & marshallh\n    ----------------------------------------\n");
     else
-      draw_puts("\f\n    64DD dump v0.56 (Blue disk) by LuigiBlood & marshallh\n    ----------------------------------------\n");
+      draw_puts("\f\n    64DD dump v0.57 (Blue disk) by LuigiBlood & marshallh\n    ----------------------------------------\n");
     setcolor(255,255,255);
     //draw_puts("    PRESS START TO DUMP");
     //DISKID_READ = 1;
