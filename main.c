@@ -188,6 +188,20 @@ u16 readController()
 	//Use newbutton for global
 }
 
+void skipToLBA(u32 lba)
+{
+	//Log Skip
+	if (skipLBA == lba)
+		return;
+	
+	errorsLBA++;
+	logData[(errorsLBA - 1) * 2] = (u16)selectLBA ^ 0x8000; //OR 0x8000 = SKIP
+	logData[((errorsLBA - 1) * 2) + 1] = 0;
+	error_LBA = 0xFFFFFFFF;
+	
+	skipLBA = lba;
+}
+
 void copytoCart(const char *src, const char *dest, const int len)
 {
 	OSIoMesg dmaIoMesgBuf;
@@ -383,7 +397,7 @@ void mainproc(void *arg)
 			else if (menumode == 1)
 			{
 				setcolor(255,255,255);
-				
+				draw_puts("                                             \n");
 				draw_puts("    DO NOT TURN OFF THE SYSTEM OR REMOVE THE DISK\n");
 				draw_puts("    --- DUMPING --- Press START to pause the dump.\n\n");
 				
@@ -411,6 +425,32 @@ void mainproc(void *arg)
 					while (PAUSE != 0)
 					{
 						//PAUSE CODE
+						readController();
+						draw_puts("\f\n\n\n\n\n\n\n\n    --- PAUSED --- Press START to resume the dump.");
+						
+						if (selectLBA < LBA_ranges[1])
+						{
+							draw_puts(" Press B to skip to RAM Area.\n\n");
+						}
+						else
+						{
+							draw_puts(" Press B to stop the dumping.\n\n");
+						}
+						
+						if (newbutton & START_BUTTON)
+						{
+							draw_puts("\f\n\n\n\n\n\n\n\n    --- DUMPING --- Press START to pause the dump.                              ");
+							PAUSE = 0;
+						}
+						else if (newbutton & B_BUTTON)
+						{
+							PAUSE = 0;
+							draw_puts("\f\n\n\n\n\n\n\n\n    --- DUMPING --- Press START to pause the dump.                              ");
+							if (selectLBA < LBA_ranges[1])
+								skipToLBA(LBA_ranges[1]);
+							else
+								skipToLBA(LBA_ranges[3]);
+						}
 					}
 					
 					//Get current LBA size
@@ -428,7 +468,7 @@ void mainproc(void *arg)
 						//Read LBA
 						
 						//Prints current LBA
-						sprintf(console_text, "\f\n\n\n\n\n\n\n\n    DUMPING LBA: %4d/4315 (%.1f%%)            \n", selectLBA, (float)selectLBA / 4315.0f * 100.0f);
+						sprintf(console_text, "\f\n\n\n\n\n\n\n\n\n    DUMPING LBA: %4d/4315 (%.1f%%)            \n", selectLBA, (float)selectLBA / 4315.0f * 100.0f);
 						draw_puts(console_text);
 						
 						//Read LBA Data
@@ -442,12 +482,25 @@ void mainproc(void *arg)
 								//TRACK_FOLLOWING_ERROR
 							case 1:
 								//UNRECOVERED_READ_ERROR
-								sprintf(console_text, "\f\n\n\n\n\n\n\n\n\n\n    * LBA READ ERROR AT %4d *\n", selectLBA);
+								sprintf(console_text, "\f\n\n\n\n\n\n\n\n\n\n\n    * LBA READ ERROR AT %4d *\n", selectLBA);
 								draw_puts(console_text);
 								
+								//Log errors
+								if (error_LBA == 0xFFFFFFFF)
+								{
+									errorsLBA++;
+									logData[(errorsLBA - 1) * 2] = (u16)selectLBA;
+									logData[((errorsLBA - 1) * 2) + 1] = 1;
+								}
+								else if (error_LBA == (selectLBA - 1))
+								{
+									logData[((errorsLBA - 1) * 2) + 1]++;
+								}
+								error_LBA = selectLBA;
+								
+								//Skip
 								if (DUMPTYPE == 0 && selectLBA >= 24)
 								{
-									//Prepare Skip
 									if (selectLBA > LBA_ranges[1] && selectLBA < LBA_ranges[2])
 										ERROR_NB = 0;
 									
@@ -457,20 +510,22 @@ void mainproc(void *arg)
 									if ((selectLBA > LBA_ranges[2]) && (selectLBA < LBA_ranges[3]))
 										ERROR_NB++;
 									
+									//If more than 5 errors outside the formatted LBAs, then skip to RAM
 									if (ERROR_NB >= 5)
 									{
 										if (selectLBA < LBA_ranges[1])
-											skipLBA = LBA_ranges[1];
+											skipToLBA(LBA_ranges[1]);
 										else if (selectLBA < LBA_ranges[3])
-											skipLBA = LBA_ranges[3];
+											skipToLBA(LBA_ranges[3]);
 										ERROR_NB = 0;
 									}
 								}
 								break;
 							case 0:
 								//GOOD
-								sprintf(console_text, "\f\n\n\n\n\n\n\n\n\n    **LBA LAST GOOD READ AT %4d**\n", selectLBA);
+								sprintf(console_text, "\f\n\n\n\n\n\n\n\n\n\n    **LBA LAST GOOD READ AT %4d**\n", selectLBA);
 								draw_puts(console_text);
+								error_LBA = 0xFFFFFFFF;
 								break;
 						}
 						
@@ -487,9 +542,9 @@ void mainproc(void *arg)
 					else
 					{
 						//Skip LBA
-						
+						logData[((errorsLBA - 1) * 2) + 1]++;
 						//Prints current LBA
-						sprintf(console_text, "\f\n\n\n\n\n\n\n\n    SKIPPING LBA: %4d/4315 (%.1f%%)           \n", selectLBA, (float)selectLBA / 4315.0f * 100.0f);
+						sprintf(console_text, "\f\n\n\n\n\n\n\n\n\n    SKIPPING LBA: %4d/4315 (%.1f%%)           \n", selectLBA, (float)selectLBA / 4315.0f * 100.0f);
 						draw_puts(console_text);
 					}
 					
@@ -560,10 +615,54 @@ void mainproc(void *arg)
 				
 				//DUMP IS DONE
 				draw_puts("\n");
+				
+				//Write Dump to SD Card
 				if (_diskID.gameName[0] >= 0x20 && _diskID.gameName[1] >= 0x20 && _diskID.gameName[2] >= 0x20 && _diskID.gameName[3] >= 0x20)
 					fat_start(_diskID.gameName);
 				else
 					fat_start("TEST");
+				
+				//Write Log to SD Card
+				if (errorsLBA > 0)
+				{
+					char logstr[(errorsLBA * 16) + 49];
+					if (isDiskDebug() == 0)
+					{
+						if (_diskID.gameName[0] >= 0x20 && _diskID.gameName[1] >= 0x20 && _diskID.gameName[2] >= 0x20 && _diskID.gameName[3] >= 0x20)
+							sprintf(console_text, "64DDdump 0.70 (Gray)\r\nNUD-%c%c%c%c-JPN.ndd LOG\r\n---", _diskID.gameName[0], _diskID.gameName[1], _diskID.gameName[2], _diskID.gameName[3]);
+						else
+							sprintf(console_text, "64DDdump 0.70 (Gray)\r\nNUD-TEST-JPN.ndd LOG\r\n---");
+					}
+					else
+					{
+						if (_diskID.gameName[0] >= 0x20 && _diskID.gameName[1] >= 0x20 && _diskID.gameName[2] >= 0x20 && _diskID.gameName[3] >= 0x20)
+							sprintf(console_text, "64DDdump 0.70 (Blue)\r\nNUD-%c%c%c%c-JPN.ndd LOG\r\n---", _diskID.gameName[0], _diskID.gameName[1], _diskID.gameName[2], _diskID.gameName[3]);
+						else
+							sprintf(console_text, "64DDdump 0.70 (Blue)\r\nNUD-TEST-JPN.ndd LOG\r\n---");
+					}
+					
+					strcpy(logstr, console_text);
+					
+					for (i = 1; i <= errorsLBA; i++)
+					{
+						if ((logData[(i - 1) * 2] & 0x8000) == 0)
+							sprintf(console_text, "\r\n%04d-%04d BAD ", logData[(i - 1) * 2], (logData[(i - 1) * 2]) + (logData[((i - 1) * 2) + 1] - 1));
+						else
+							sprintf(console_text, "\r\n%04d-%04d SKIP", (logData[(i - 1) * 2] & 0x7FFF), (logData[(i - 1) * 2] & 0x7FFF) + (logData[((i - 1) * 2) + 1] - 1));
+						
+						//0000-1111 BAD /SKIP (0000 = LBA, 1111 = number of blocks after that one that has an error too)
+						
+						strcat(logstr, console_text);
+					}
+					
+					osWritebackDCacheAll();
+					copytoCart((void *)&logstr, 0xB0000000, ((errorsLBA * 16) + 49));
+					
+					if (_diskID.gameName[0] >= 0x20 && _diskID.gameName[1] >= 0x20 && _diskID.gameName[2] >= 0x20 && _diskID.gameName[3] >= 0x20)
+						fat_startlog(_diskID.gameName, ((errorsLBA * 16) + 49));
+					else
+						fat_startlog("TEST", ((errorsLBA * 16) + 49));
+				}
 				
 				draw_puts("\n    - DONE !!\n");
 			

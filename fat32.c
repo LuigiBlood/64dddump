@@ -1063,8 +1063,8 @@ int fat_set_size(fat_dirent *de, uint32_t size) {
     if (de->size == size)
         return 0;
 
-	current_clusters = ceilf(cur_size / bytes_per_clus);
-	new_clusters = ceilf(new_size / bytes_per_clus);
+	current_clusters = ceil((double)cur_size / (double)bytes_per_clus);
+	new_clusters = ceil((double)new_size / (double)bytes_per_clus);
 
     // expand file
     if (new_clusters > current_clusters) {
