@@ -12,6 +12,7 @@
 #include	"fat32.h"
 #include	"ci.h"
 #include "gamelist.h"
+#include "leohax.h"
 
 #define	NUM_MESSAGE 	1
 
@@ -109,6 +110,51 @@ void setDefaultLBARange()
 	LBA_ranges[1] = _leoCapacity.startLBA + 24;
 	LBA_ranges[2] = _leoCapacity.endLBA + 24;
 	LBA_ranges[3] = 0x10DC;
+}
+
+void setLBARange()
+{
+	if (isDiskDebug() == 0)
+	{
+		//LBA_ranges[0] = ROM Area LBA End
+		//LBA_ranges[1] = RAM Area LBA Start
+		//LBA_ranges[2] = RAM Area LBA End
+		//LBA_ranges[3] = Max LBA
+		
+		int LBAsysdata = 0;
+		
+		LBA_ranges[0] = ((LEO_sys_data[0xE0] << 8) | LEO_sys_data[0xE1]) + 24;
+		LBA_ranges[1] = ((LEO_sys_data[0xE2] << 8) | LEO_sys_data[0xE3]) + 24;
+		LBA_ranges[2] = ((LEO_sys_data[0xE4] << 8) | LEO_sys_data[0xE5]) + 24;
+		LBA_ranges[3] = 0x10DC;
+		
+		//Checks
+		if (LBA_ranges[0] >= LBA_ranges[3])
+			LBAsysdata = -1;
+		
+		if (LBA_ranges[1] >= LBA_ranges[3])
+			LBAsysdata = -1;
+		
+		if (LBA_ranges[2] >= LBA_ranges[3])
+			LBAsysdata = -1;
+		
+		if (LBA_ranges[0] >= LBA_ranges[1])
+			LBAsysdata = -1;
+		
+		if (LBA_ranges[1] >= LBA_ranges[2])
+			LBAsysdata = -1;
+		
+		if (LBA_ranges[0] >= LBA_ranges[2])
+			LBAsysdata = -1;
+		
+		//Restore default LBA range in case of fuck up (such as Super Mario 64 Disk Version)
+		if (LBAsysdata == -1)
+			setDefaultLBARange();
+	}
+	else
+	{
+		setDefaultLBARange();
+	}
 }
 
 int errorread(int error)
@@ -281,6 +327,9 @@ void mainproc(void *arg)
 	//Init PI Manager
 	osCreatePiManager((OSPri)OS_MESG_PRI_NORMAL, &dmaMessageQ, dmaMessageBuf, DMA_QUEUE_SIZE);
 	
+	//HAX 64DD
+	haxAll();
+	
 	//Initialize Leo Manager (64DD)
 	LeoCJCreateLeoManager((OSPri)OS_PRIORITY_LEOMGR-1, (OSPri)OS_PRIORITY_LEOMGR, LeoMessages, NUM_LEO_MESGS);
 	LeoResetClear();
@@ -290,7 +339,7 @@ void mainproc(void *arg)
 	
 	//Render Text
 	setcolor(255,255,255);
-	draw_puts("\f\n    64DD Disk Dumper v0.70 - by LuigiBlood & marshallh\n    ----------------------------------------\n");
+	draw_puts("\f\n    64DD Disk Dumper v0.71 - by LuigiBlood & marshallh\n    ----------------------------------------\n");
 	if (isDiskDebug() == 0)
 	{
 		setcolor(128,128,128);
@@ -336,9 +385,11 @@ void mainproc(void *arg)
 		if (isDiskPresent() == 0)
 		{
 			DISKID_READ = 0;
-			draw_puts("    PLEASE INSERT DISK                                                ");
-			draw_puts("                                                                      ");
-			draw_puts("                                                                      ");
+			draw_puts("    PLEASE INSERT DISK                                                \n");
+			draw_puts("                                                                      \n");
+			draw_puts("                                                                      \n");
+			draw_puts("                                                                      \n");
+			draw_puts("                                                                      \n");
 		}
 		
 		if (isDiskChanged() == 1)
@@ -354,7 +405,6 @@ void mainproc(void *arg)
 			
 			switch (error)
 			{
-				case LEO_ERROR_COMMAND_TERMINATED:
 				case LEO_ERROR_GOOD:
 					//It read Disk ID normally
 					sprintf(console_text, "    Disk ID: %c%c%c%c", _diskID.gameName[0], _diskID.gameName[1], _diskID.gameName[2], _diskID.gameName[3]);
@@ -362,16 +412,35 @@ void mainproc(void *arg)
 					draw_puts(" - ");
 					printGame(_diskID.gameName);
 					DISKID_READ = 1;
+					
+					sprintf(console_text, "\n    Disk Type: %02X - Disk Region: ", LEOdisk_type);
+					draw_puts(console_text);
+					if (*((u32*)&LEO_sys_data[0]) == LEO_COUNTRY_JPN)
+						draw_puts("JAPAN             ");
+					else if (*((u32*)&LEO_sys_data[0]) == LEO_COUNTRY_USA)
+						draw_puts("USA               ");
+					else if (*((u32*)&LEO_sys_data[0]) == LEO_COUNTRY_NONE)
+						draw_puts("NONE              ");
+					else
+					{
+						sprintf(console_text, "UNKNOWN (%08X)", *((u32*)&LEO_sys_data[0]));
+						draw_puts(console_text);
+					}
+					
 					break;
 				default:
 					//Error
 					draw_puts("    Disk Error: ");
 					errorcheck(error);
+					draw_puts("                                                                      \n");
+					draw_puts("                                                                      \n");
 					break;
 			}
+			
+			menumode = 0;
 		}
 		
-		draw_puts("\f\n\n\n\n\n\n");
+		draw_puts("\f\n\n\n\n\n\n\n");
 		// MENU, only care if a disk is present
 		if (DISKID_READ == 1)
 		{
@@ -380,26 +449,87 @@ void mainproc(void *arg)
 				//Render Menu
 				setcolor(255,255,255);			
 				if (menuselect == 0) setcolor(0,255,0);
-				draw_puts("    - FAST DUMP (Skips unformatted blocks)\n");
+				draw_puts("    - SKIP DUMP (Skips unformatted blocks)\n");
 				setcolor(255,255,255);
 				if (menuselect == 1) setcolor(0,255,0);
 				draw_puts("    - FULL DUMP (Do not skip any blocks, slower)\n");
+				setcolor(255,255,255);
+				if (menuselect == 2) setcolor(0,255,0);
+				draw_puts("    - FAST FULL DUMP (may be less accurate)\n");
 				
-				if (newbutton & D_JPAD || newbutton & U_JPAD)
-					menuselect ^= 1;
+				if (newbutton & D_JPAD)
+				{
+					menuselect++;
+					if (menuselect > 2)
+						menuselect = 0;
+				}
+				
+				if (newbutton & U_JPAD)
+				{
+					if (menuselect <= 0)
+						menuselect = 3;
+					menuselect--;
+				}
 				
 				if (newbutton & A_BUTTON)
 				{
-					DUMPTYPE = menuselect;
-					menumode++;
+					if (menuselect == 2)
+					{	
+						DUMPTYPE = 1;
+						menumode = 1;
+					}
+					else
+					{
+						DUMPTYPE = menuselect;
+						menumode = 2;
+					}
 				}
 			}
 			else if (menumode == 1)
 			{
+				//Render Menu
+				setcolor(255,255,255);			
+				if (menuselect == 0) setcolor(0,255,0);
+				draw_puts("    - 32 RETRIES, 1 second per bad block                 \n");
 				setcolor(255,255,255);
-				draw_puts("                                             \n");
-				draw_puts("    DO NOT TURN OFF THE SYSTEM OR REMOVE THE DISK\n");
-				draw_puts("    --- DUMPING --- Press START to pause the dump.\n\n");
+				if (menuselect == 1) setcolor(0,255,0);
+				draw_puts("    - 16 RETRIES, 0.5 second per bad block               \n");
+				setcolor(255,255,255);
+				if (menuselect == 2) setcolor(0,255,0);
+				draw_puts("    - 8 RETRIES, 0.25 second per bad block               \n");
+				
+				if (newbutton & D_JPAD)
+				{
+					menuselect++;
+					if (menuselect > 2)
+						menuselect = 0;
+				}
+				
+				if (newbutton & U_JPAD)
+				{
+					if (menuselect <= 0)
+						menuselect = 3;
+					menuselect--;
+				}
+				
+				if (newbutton & A_BUTTON)
+				{
+					if (menuselect == 0)
+						haxReadErrorRetry(32);
+					else if (menuselect == 1)
+						haxReadErrorRetry(16);
+					else if (menuselect == 2)
+						haxReadErrorRetry(8);
+				
+					menumode = 2;
+				}
+			}
+			else if (menumode == 2)
+			{
+				setcolor(255,255,255);
+				draw_puts("                                                         \n");
+				draw_puts("    DO NOT TURN OFF THE SYSTEM OR REMOVE THE DISK        \n");
+				draw_puts("    --- DUMPING --- Press START to pause the dump.       \n\n");
 				
 				//Init Dump
 				skipLBA = 0;	//Tells up to which LBA number to skip reading
@@ -409,8 +539,8 @@ void mainproc(void *arg)
 				srand(osGetCount()); // necessary to generate unique short 8.3 filenames on memory card
 				ciEnableRomWrites();
 				
-				//Default LBA ranges (already loaded thanks to ReadDiskID)
-				setDefaultLBARange();
+				//Set LBA ranges (already loaded thanks to ReadDiskID)
+				setLBARange();
 				
 				//Dumping code
 				for (selectLBA = 0; selectLBA < 0x10DC; selectLBA += 1)
@@ -426,7 +556,7 @@ void mainproc(void *arg)
 					{
 						//PAUSE CODE
 						readController();
-						draw_puts("\f\n\n\n\n\n\n\n\n    --- PAUSED --- Press START to resume the dump.");
+						draw_puts("\f\n\n\n\n\n\n\n\n\n    --- PAUSED --- Press START to resume the dump.");
 						
 						if (selectLBA < LBA_ranges[1])
 						{
@@ -439,13 +569,13 @@ void mainproc(void *arg)
 						
 						if (newbutton & START_BUTTON)
 						{
-							draw_puts("\f\n\n\n\n\n\n\n\n    --- DUMPING --- Press START to pause the dump.                              ");
+							draw_puts("\f\n\n\n\n\n\n\n\n\n    --- DUMPING --- Press START to pause the dump.                              ");
 							PAUSE = 0;
 						}
 						else if (newbutton & B_BUTTON)
 						{
 							PAUSE = 0;
-							draw_puts("\f\n\n\n\n\n\n\n\n    --- DUMPING --- Press START to pause the dump.                              ");
+							draw_puts("\f\n\n\n\n\n\n\n\n\n    --- DUMPING --- Press START to pause the dump.                              ");
 							if (selectLBA < LBA_ranges[1])
 								skipToLBA(LBA_ranges[1]);
 							else
@@ -468,7 +598,7 @@ void mainproc(void *arg)
 						//Read LBA
 						
 						//Prints current LBA
-						sprintf(console_text, "\f\n\n\n\n\n\n\n\n\n    DUMPING LBA: %4d/4315 (%.1f%%)            \n", selectLBA, (float)selectLBA / 4315.0f * 100.0f);
+						sprintf(console_text, "\f\n\n\n\n\n\n\n\n\n\n    DUMPING LBA: %4d/4315 (%.1f%%)            \n", selectLBA, (float)selectLBA / 4315.0f * 100.0f);
 						draw_puts(console_text);
 						
 						//Read LBA Data
@@ -482,7 +612,7 @@ void mainproc(void *arg)
 								//TRACK_FOLLOWING_ERROR
 							case 1:
 								//UNRECOVERED_READ_ERROR
-								sprintf(console_text, "\f\n\n\n\n\n\n\n\n\n\n\n    * LBA READ ERROR AT %4d *\n", selectLBA);
+								sprintf(console_text, "\f\n\n\n\n\n\n\n\n\n\n\n\n    * LBA READ ERROR AT %4d *\n", selectLBA);
 								draw_puts(console_text);
 								
 								//Log errors
@@ -523,94 +653,24 @@ void mainproc(void *arg)
 								break;
 							case 0:
 								//GOOD
-								sprintf(console_text, "\f\n\n\n\n\n\n\n\n\n\n    **LBA LAST GOOD READ AT %4d**\n", selectLBA);
+								sprintf(console_text, "\f\n\n\n\n\n\n\n\n\n\n\n    **LBA LAST GOOD READ AT %4d**\n", selectLBA);
 								draw_puts(console_text);
 								error_LBA = 0xFFFFFFFF;
 								break;
 						}
-						
-						//Check if System Format Data is read properly (0 = Good)
-						if (selectLBA == (0 + (2 * isDiskDebug())))
-							system_area_good[0] = error;
-						else if (selectLBA == (1 + (2 * isDiskDebug())))
-							system_area_good[1] = error;
-						else if (selectLBA == (8 + (2 * isDiskDebug())))
-							system_area_good[2] = error;
-						else if (selectLBA == (9 + (2 * isDiskDebug())))
-							system_area_good[3] = error;
 					}
 					else
 					{
 						//Skip LBA
 						logData[((errorsLBA - 1) * 2) + 1]++;
 						//Prints current LBA
-						sprintf(console_text, "\f\n\n\n\n\n\n\n\n\n    SKIPPING LBA: %4d/4315 (%.1f%%)           \n", selectLBA, (float)selectLBA / 4315.0f * 100.0f);
+						sprintf(console_text, "\f\n\n\n\n\n\n\n\n\n\n    SKIPPING LBA: %4d/4315 (%.1f%%)           \n", selectLBA, (float)selectLBA / 4315.0f * 100.0f);
 						draw_puts(console_text);
 					}
 					
 					//Copy Data to ROM
 					osWritebackDCacheAll();
 					copytoCart((void *)&blockData, 0xB0000000 + totalLBAsize(selectLBA), LBAsize);
-					
-					//Do System Area check
-					if (selectLBA == 24 && isDiskDebug() == 0)
-					{
-						int LBAsysdata = -1;
-						u32 data1 = 0;
-						u32 data2 = 0;
-					
-						//Check which System Data was fully loaded
-						if (system_area_good[3] == LEO_ERROR_GOOD)
-							LBAsysdata = 9 + (2 * isDiskDebug());
-						else if (system_area_good[2] == LEO_ERROR_GOOD)
-							LBAsysdata = 8 + (2 * isDiskDebug());
-						else if (system_area_good[1] == LEO_ERROR_GOOD)
-							LBAsysdata = 1 + (2 * isDiskDebug());
-						else if (system_area_good[0] == LEO_ERROR_GOOD)
-							LBAsysdata = 0 + (2 * isDiskDebug());
-						
-						if (LBAsysdata != -1)
-						{
-							//Load System LBA ranges
-							osWritebackDCacheAll();
-							osEPiReadIo(pi_handle, 0xB00000E0 + (19720 * LBAsysdata), &data1);
-							
-							osWritebackDCacheAll();
-							osEPiReadIo(pi_handle, 0xB00000E4 + (19720 * LBAsysdata), &data2);
-							
-							//LBA_ranges[0] = ROM Area LBA End
-							//LBA_ranges[1] = RAM Area LBA Start
-							//LBA_ranges[2] = RAM Area LBA End
-							//LBA_ranges[3] = Max LBA
-							
-							LBA_ranges[1] = (data1 & 0xFFFF) + 24;
-							LBA_ranges[0] = (data1 >> 16) + 24;
-							LBA_ranges[2] = (data2 >> 16) + 24;
-							LBA_ranges[3] = 0x10DC;
-							
-							if (LBA_ranges[0] > LBA_ranges[3])
-								LBAsysdata = -1;
-							
-							if (LBA_ranges[1] > LBA_ranges[3])
-								LBAsysdata = -1;
-							
-							if (LBA_ranges[2] > LBA_ranges[3])
-								LBAsysdata = -1;
-							
-							if	(LBA_ranges[0] > LBA_ranges[1])
-								LBAsysdata = -1;
-							
-							if (LBA_ranges[1] > LBA_ranges[2])
-								LBAsysdata = -1;
-							
-							if (LBA_ranges[0] > LBA_ranges[2])
-								LBAsysdata = -1;
-							
-							//Restore default LBA range in case of fuck up (such as Super Mario 64 Disk Version)
-							if (LBAsysdata == -1)
-								setDefaultLBARange();
-						}
-					}
 				}
 				
 				//DUMP IS DONE
@@ -629,16 +689,16 @@ void mainproc(void *arg)
 					if (isDiskDebug() == 0)
 					{
 						if (_diskID.gameName[0] >= 0x20 && _diskID.gameName[1] >= 0x20 && _diskID.gameName[2] >= 0x20 && _diskID.gameName[3] >= 0x20)
-							sprintf(console_text, "64DDdump 0.70 (Gray)\r\nNUD-%c%c%c%c-JPN.ndd LOG\r\n---", _diskID.gameName[0], _diskID.gameName[1], _diskID.gameName[2], _diskID.gameName[3]);
+							sprintf(console_text, "64DDdump 0.71 (Gray)\r\nNUD-%c%c%c%c-JPN.ndd LOG\r\n---", _diskID.gameName[0], _diskID.gameName[1], _diskID.gameName[2], _diskID.gameName[3]);
 						else
-							sprintf(console_text, "64DDdump 0.70 (Gray)\r\nNUD-TEST-JPN.ndd LOG\r\n---");
+							sprintf(console_text, "64DDdump 0.71 (Gray)\r\nNUD-TEST-JPN.ndd LOG\r\n---");
 					}
 					else
 					{
 						if (_diskID.gameName[0] >= 0x20 && _diskID.gameName[1] >= 0x20 && _diskID.gameName[2] >= 0x20 && _diskID.gameName[3] >= 0x20)
-							sprintf(console_text, "64DDdump 0.70 (Blue)\r\nNUD-%c%c%c%c-JPN.ndd LOG\r\n---", _diskID.gameName[0], _diskID.gameName[1], _diskID.gameName[2], _diskID.gameName[3]);
+							sprintf(console_text, "64DDdump 0.71 (Blue)\r\nNUD-%c%c%c%c-JPN.ndd LOG\r\n---", _diskID.gameName[0], _diskID.gameName[1], _diskID.gameName[2], _diskID.gameName[3]);
 						else
-							sprintf(console_text, "64DDdump 0.70 (Blue)\r\nNUD-TEST-JPN.ndd LOG\r\n---");
+							sprintf(console_text, "64DDdump 0.71 (Blue)\r\nNUD-TEST-JPN.ndd LOG\r\n---");
 					}
 					
 					strcpy(logstr, console_text);
