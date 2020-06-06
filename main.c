@@ -442,6 +442,9 @@ void mainproc(void *arg)
 					//Clear sys data
 					bzero(LEO_sys_data, 0xE8);
 
+					//Clear Disk ID
+					bzero((void*)&_diskID, 4);
+
 					//Read Formatting Information (System LBA 4)
 					LeoReadWrite(&_cmdBlk, OS_READ, 4, (void*)&blockData, 1, &diskMsgQ);
 					osRecvMesg(&diskMsgQ, (OSMesg *)&error, OS_MESG_BLOCK);
@@ -471,8 +474,8 @@ void mainproc(void *arg)
 					
 					DISKID_READ = 1;
 					LEOdisk_type = 0;	//Read in Disk Type 0 by default
-					draw_puts("    Disk seems to be unused. You can still dump it.                   \n");
-					draw_puts("                                                                      \n");
+					draw_puts("    Disk seems to be unused or corrupted. You can still dump it.      \n");
+					draw_puts("    Disk will be dumped as Disk Type 0.                               \n");
 					draw_puts("                                                                      \n");
 					draw_puts("                                                                      \n");
 					break;
@@ -728,7 +731,7 @@ void mainproc(void *arg)
 				if (_diskID.gameName[0] >= 0x20 && _diskID.gameName[1] >= 0x20 && _diskID.gameName[2] >= 0x20 && _diskID.gameName[3] >= 0x20)
 					fat_start(_diskID.gameName);
 				else
-					fat_start("TEST");
+					fat_start("DUMP");
 				
 				//Write Log to SD Card
 				if (errorsLBA > 0)
@@ -739,14 +742,14 @@ void mainproc(void *arg)
 						if (_diskID.gameName[0] >= 0x20 && _diskID.gameName[1] >= 0x20 && _diskID.gameName[2] >= 0x20 && _diskID.gameName[3] >= 0x20)
 							sprintf(console_text, "64DDdump 0.8  (Gray)\r\nNUD-%c%c%c%c-JPN.ndd LOG\r\n---", _diskID.gameName[0], _diskID.gameName[1], _diskID.gameName[2], _diskID.gameName[3]);
 						else
-							sprintf(console_text, "64DDdump 0.8  (Gray)\r\nNUD-TEST-JPN.ndd LOG\r\n---");
+							sprintf(console_text, "64DDdump 0.8  (Gray)\r\nNUD-DUMP-JPN.ndd LOG\r\n---");
 					}
 					else
 					{
 						if (_diskID.gameName[0] >= 0x20 && _diskID.gameName[1] >= 0x20 && _diskID.gameName[2] >= 0x20 && _diskID.gameName[3] >= 0x20)
 							sprintf(console_text, "64DDdump 0.8  (Blue)\r\nNUD-%c%c%c%c-JPN.ndd LOG\r\n---", _diskID.gameName[0], _diskID.gameName[1], _diskID.gameName[2], _diskID.gameName[3]);
 						else
-							sprintf(console_text, "64DDdump 0.8  (Blue)\r\nNUD-TEST-JPN.ndd LOG\r\n---");
+							sprintf(console_text, "64DDdump 0.8  (Blue)\r\nNUD-DUMP-JPN.ndd LOG\r\n---");
 					}
 					
 					strcpy(logstr, console_text);
@@ -769,7 +772,7 @@ void mainproc(void *arg)
 					if (_diskID.gameName[0] >= 0x20 && _diskID.gameName[1] >= 0x20 && _diskID.gameName[2] >= 0x20 && _diskID.gameName[3] >= 0x20)
 						fat_startlog(_diskID.gameName, ((errorsLBA * 16) + 49));
 					else
-						fat_startlog("TEST", ((errorsLBA * 16) + 49));
+						fat_startlog("DUMP", ((errorsLBA * 16) + 49));
 				}
 				
 				draw_puts("\n    - DONE !!\n");
