@@ -339,7 +339,7 @@ void mainproc(void *arg)
 	
 	//Render Text
 	setcolor(255,255,255);
-	draw_puts("\f\n    64DD Disk Dumper v0.71 - by LuigiBlood & marshallh\n    ----------------------------------------\n");
+	draw_puts("\f\n    64DD Disk Dumper v0.8 - by LuigiBlood & marshallh\n    ----------------------------------------\n");
 	if (isDiskDebug() == 0)
 	{
 		setcolor(128,128,128);
@@ -390,6 +390,8 @@ void mainproc(void *arg)
 			draw_puts("                                                                      \n");
 			draw_puts("                                                                      \n");
 			draw_puts("                                                                      \n");
+			draw_puts("                                                                      \n");
+			draw_puts("                                                                      \n");
 		}
 		
 		if (isDiskChanged() == 1)
@@ -426,18 +428,59 @@ void mainproc(void *arg)
 						sprintf(console_text, "UNKNOWN (%08X)", *((u32*)&LEO_sys_data[0]));
 						draw_puts(console_text);
 					}
-					
+					draw_puts("                                                                      \n");
+					draw_puts("                                                                      \n");
+					draw_puts("                                                                      \n");
+					draw_puts("                                                                      \n");
 					break;
 				default:
-					//Error
-					draw_puts("    Disk Error: ");
-					errorcheck(error);
+					//Error, this means the disk might not be used or is corrupted
+					//Perform checks if the disk is in good shape.
+					haxSystemAreaReadSet();	//Set System Area is read to use LeoReadWrite without any checks from the driver
+					haxMediumChangedClear(); //Clear Medium Changed Flag in drive and driver
+
+					//Clear sys data
+					bzero(LEO_sys_data, 0xE8);
+
+					//Read Formatting Information (System LBA 4)
+					LeoReadWrite(&_cmdBlk, OS_READ, 4, (void*)&blockData, 1, &diskMsgQ);
+					osRecvMesg(&diskMsgQ, (OSMesg *)&error, OS_MESG_BLOCK);
+					if (error != LEO_ERROR_GOOD)
+					{
+						//Read Formatting Information (System LBA 5)
+						LeoReadWrite(&_cmdBlk, OS_READ, 5, (void*)&blockData, 1, &diskMsgQ);
+						osRecvMesg(&diskMsgQ, (OSMesg *)&error, OS_MESG_BLOCK);
+
+						if (error != LEO_ERROR_GOOD)
+						{
+							draw_puts("    Disk Error: ");
+							errorcheck(error);
+							draw_puts("\n    Couldn't read Disk Information.                                   \n");
+							draw_puts("                                                                      \n");
+							draw_puts("                                                                      \n");
+							DISKID_READ = 2;
+							break;
+						}
+					}
+
+					//Use Formatting Info for dumping
+					if (isDiskDebug())
+						bcopy(blockData, LEO_sys_data, 0xC0);
+					else
+						bcopy(blockData, LEO_sys_data, 0xE8);
+					
+					DISKID_READ = 1;
+					LEOdisk_type = 0;	//Read in Disk Type 0 by default
+					draw_puts("    Disk seems to be unused. You can still dump it.                   \n");
+					draw_puts("                                                                      \n");
 					draw_puts("                                                                      \n");
 					draw_puts("                                                                      \n");
 					break;
 			}
 			
 			menumode = 0;
+			if (isDiskDebug())
+				menuselect = 1;
 		}
 		
 		draw_puts("\f\n\n\n\n\n\n\n");
@@ -449,19 +492,22 @@ void mainproc(void *arg)
 				//Render Menu
 				setcolor(255,255,255);			
 				if (menuselect == 0) setcolor(0,255,0);
-				draw_puts("    - SKIP DUMP (Skips unformatted blocks)\n");
+				if (isDiskDebug()) setcolor(100,100,100);
+				draw_puts("    - SKIP DUMP (Skips unformatted blocks, retail disk only)          \n");
 				setcolor(255,255,255);
 				if (menuselect == 1) setcolor(0,255,0);
-				draw_puts("    - FULL DUMP (Do not skip any blocks, slower)\n");
+				draw_puts("    - FULL DUMP (Do not skip any blocks, slower)                      \n");
 				setcolor(255,255,255);
 				if (menuselect == 2) setcolor(0,255,0);
-				draw_puts("    - FAST FULL DUMP (may be less accurate)\n");
+				draw_puts("    - FAST FULL DUMP (may be less accurate)                           \n");
 				
 				if (newbutton & D_JPAD)
 				{
 					menuselect++;
 					if (menuselect > 2)
 						menuselect = 0;
+					if (isDiskDebug() && menuselect == 0)
+						menuselect = 1;
 				}
 				
 				if (newbutton & U_JPAD)
@@ -469,6 +515,8 @@ void mainproc(void *arg)
 					if (menuselect <= 0)
 						menuselect = 3;
 					menuselect--;
+					if (isDiskDebug() && menuselect == 0)
+						menuselect = 2;
 				}
 				
 				if (newbutton & A_BUTTON)
@@ -490,13 +538,13 @@ void mainproc(void *arg)
 				//Render Menu
 				setcolor(255,255,255);			
 				if (menuselect == 0) setcolor(0,255,0);
-				draw_puts("    - 32 RETRIES, 1 second per bad block                 \n");
+				draw_puts("    - 32 RETRIES, 1 second per bad block                              \n");
 				setcolor(255,255,255);
 				if (menuselect == 1) setcolor(0,255,0);
-				draw_puts("    - 16 RETRIES, 0.5 second per bad block               \n");
+				draw_puts("    - 16 RETRIES, 0.5 second per bad block                            \n");
 				setcolor(255,255,255);
 				if (menuselect == 2) setcolor(0,255,0);
-				draw_puts("    - 8 RETRIES, 0.25 second per bad block               \n");
+				draw_puts("    - 8 RETRIES, 0.25 second per bad block                            \n");
 				
 				if (newbutton & D_JPAD)
 				{
@@ -527,9 +575,9 @@ void mainproc(void *arg)
 			else if (menumode == 2)
 			{
 				setcolor(255,255,255);
-				draw_puts("                                                         \n");
-				draw_puts("    DO NOT TURN OFF THE SYSTEM OR REMOVE THE DISK        \n");
-				draw_puts("    --- DUMPING --- Press START to pause the dump.       \n\n");
+				draw_puts("                                                                      \n");
+				draw_puts("    DO NOT TURN OFF THE SYSTEM OR REMOVE THE DISK                     \n");
+				draw_puts("    --- DUMPING --- Press START to pause the dump.                    \n\n");
 				
 				//Init Dump
 				skipLBA = 0;	//Tells up to which LBA number to skip reading
@@ -556,7 +604,7 @@ void mainproc(void *arg)
 					{
 						//PAUSE CODE
 						readController();
-						draw_puts("\f\n\n\n\n\n\n\n\n\n    --- PAUSED --- Press START to resume the dump.");
+						draw_puts("\f\n\n\n\n\n\n\n\n\n    --- PAUSED --- Press START to resume the dump.                    ");
 						
 						if (selectLBA < LBA_ranges[1])
 						{
@@ -689,16 +737,16 @@ void mainproc(void *arg)
 					if (isDiskDebug() == 0)
 					{
 						if (_diskID.gameName[0] >= 0x20 && _diskID.gameName[1] >= 0x20 && _diskID.gameName[2] >= 0x20 && _diskID.gameName[3] >= 0x20)
-							sprintf(console_text, "64DDdump 0.71 (Gray)\r\nNUD-%c%c%c%c-JPN.ndd LOG\r\n---", _diskID.gameName[0], _diskID.gameName[1], _diskID.gameName[2], _diskID.gameName[3]);
+							sprintf(console_text, "64DDdump 0.8  (Gray)\r\nNUD-%c%c%c%c-JPN.ndd LOG\r\n---", _diskID.gameName[0], _diskID.gameName[1], _diskID.gameName[2], _diskID.gameName[3]);
 						else
-							sprintf(console_text, "64DDdump 0.71 (Gray)\r\nNUD-TEST-JPN.ndd LOG\r\n---");
+							sprintf(console_text, "64DDdump 0.8  (Gray)\r\nNUD-TEST-JPN.ndd LOG\r\n---");
 					}
 					else
 					{
 						if (_diskID.gameName[0] >= 0x20 && _diskID.gameName[1] >= 0x20 && _diskID.gameName[2] >= 0x20 && _diskID.gameName[3] >= 0x20)
-							sprintf(console_text, "64DDdump 0.71 (Blue)\r\nNUD-%c%c%c%c-JPN.ndd LOG\r\n---", _diskID.gameName[0], _diskID.gameName[1], _diskID.gameName[2], _diskID.gameName[3]);
+							sprintf(console_text, "64DDdump 0.8  (Blue)\r\nNUD-%c%c%c%c-JPN.ndd LOG\r\n---", _diskID.gameName[0], _diskID.gameName[1], _diskID.gameName[2], _diskID.gameName[3]);
 						else
-							sprintf(console_text, "64DDdump 0.71 (Blue)\r\nNUD-TEST-JPN.ndd LOG\r\n---");
+							sprintf(console_text, "64DDdump 0.8  (Blue)\r\nNUD-TEST-JPN.ndd LOG\r\n---");
 					}
 					
 					strcpy(logstr, console_text);

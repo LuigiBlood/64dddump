@@ -12,12 +12,18 @@ extern "C" {
 extern u32 LEO_country_code;	//Disk Country Code Lock
 extern u8 LEOdisk_type;		//Current Disk Type
 extern u8 LEO_sys_data[0xE8];	//System Data
+extern u8 LEOdrive_flag;	//Is System Area Read (0xFF = Read, 0 = Not Read)
+
+#define haxSystemAreaReadSet()          (LEOdrive_flag = 0xff)
+#define haxSystemAreaReadClr()          (LEOdrive_flag = 0)
 
 //Functions
 extern void leoRead();			//Read LBAs
 extern void leomain();			//Command Thread
 extern void leointerrupt();			//Interrupt Thread
 extern void leoRead_system_area();	//System Area Read
+extern void leoClrUA_MEDIUM_CHANGED();	//Clear Medium Changed Flag
+extern void leoSetUA_MEDIUM_CHANGED();	//Set Medium Changed Flag
 
 
 #ifdef _LANGUAGE_C_PLUS_PLUS
@@ -96,4 +102,10 @@ void haxAll()
 	haxDriveDetection();
 	haxIDDrive();
 	haxDevDiskAccess();
+}
+
+void haxMediumChangedClear()
+{
+	LeoResetClear();
+	leoClrUA_MEDIUM_CHANGED();
 }
