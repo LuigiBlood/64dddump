@@ -13,6 +13,7 @@ extern u32 LEO_country_code;	//Disk Country Code Lock
 extern u8 LEOdisk_type;		//Current Disk Type
 extern u8 LEO_sys_data[0xE8];	//System Data
 extern u8 LEOdrive_flag;	//Is System Area Read (0xFF = Read, 0 = Not Read)
+extern u32 __leoActive;		//Is Leo Manager Active?
 
 #define haxSystemAreaReadSet()          (LEOdrive_flag = 0xff)
 #define haxSystemAreaReadClr()          (LEOdrive_flag = 0)
@@ -20,10 +21,11 @@ extern u8 LEOdrive_flag;	//Is System Area Read (0xFF = Read, 0 = Not Read)
 //Functions
 extern void leoRead();			//Read LBAs
 extern void leomain();			//Command Thread
-extern void leointerrupt();			//Interrupt Thread
+extern void leointerrupt();		//Interrupt Thread
 extern void leoRead_system_area();	//System Area Read
 extern void leoClrUA_MEDIUM_CHANGED();	//Clear Medium Changed Flag
 extern void leoSetUA_MEDIUM_CHANGED();	//Set Medium Changed Flag
+extern u32 LeoDriveExist();	//Read Drive IPL
 
 
 #ifdef _LANGUAGE_C_PLUS_PLUS
@@ -48,6 +50,9 @@ void haxDriveDetection()
 {
 	//Force Drive Detection for Dev Drives
 	u32 *hax;
+	
+	hax = &LeoCJCreateLeoManager + 0x2C;
+	*hax = 0x00000000;
 	
 	hax = &LeoCJCreateLeoManager + 0x34;
 	*hax = 0x10000003;
@@ -94,6 +99,20 @@ void haxReadErrorRetry(u16 retries)
 	
 	hax = &leointerrupt + 0x6A4;
 	*hax = 0x3A820000 | retries;
+	
+	osWritebackDCacheAll();
+}
+
+void haxDriveExist()
+{
+	u32 *hax;
+	
+	hax = &LeoDriveExist + 0x0;
+	*hax = 0x24020001;	//addiu v0,0,1
+	hax = &LeoDriveExist + 0x4;
+	*hax = 0x03E00008;	//jr ra
+	hax = &LeoDriveExist + 0x8;
+	*hax = 0x00000000;	//nop
 }
 
 void haxAll()
@@ -102,6 +121,8 @@ void haxAll()
 	haxDriveDetection();
 	haxIDDrive();
 	haxDevDiskAccess();
+	haxDriveExist();
+	osWritebackDCacheAll();
 }
 
 void haxMediumChangedClear()

@@ -1,4 +1,4 @@
-//64DD Dump 0.60
+//64DD Dump 0.81
 //Based on pfs SDK demo
 
 #include	<ultra64.h>
@@ -331,7 +331,7 @@ void mainproc(void *arg)
 	haxAll();
 	
 	//Initialize Leo Manager (64DD)
-	LeoCJCreateLeoManager((OSPri)OS_PRIORITY_LEOMGR-1, (OSPri)OS_PRIORITY_LEOMGR, LeoMessages, NUM_LEO_MESGS);
+	error = LeoCJCreateLeoManager((OSPri)OS_PRIORITY_LEOMGR-1, (OSPri)OS_PRIORITY_LEOMGR, LeoMessages, NUM_LEO_MESGS);
 	LeoResetClear();
 	
 	setbgcolor(15,15,15);
@@ -339,7 +339,19 @@ void mainproc(void *arg)
 	
 	//Render Text
 	setcolor(255,255,255);
-	draw_puts("\f\n    64DD Disk Dumper v0.8 - by LuigiBlood & marshallh\n    ----------------------------------------\n");
+	draw_puts("\f\n    64DD Disk Dumper v0.81 - by LuigiBlood & marshallh\n    ----------------------------------------\n");
+	if (error != LEO_ERROR_GOOD)
+	{
+		draw_puts("\f\n\n    Leo Manager Error: ");
+		errorcheck(error);
+		for (;;);
+	}
+	else if (__leoActive == 0)
+	{
+		draw_puts("\f\n\n    Leo Manager Error!");
+		for (;;);
+	}
+	
 	if (isDiskDebug() == 0)
 	{
 		setcolor(128,128,128);
@@ -740,16 +752,16 @@ void mainproc(void *arg)
 					if (isDiskDebug() == 0)
 					{
 						if (_diskID.gameName[0] >= 0x20 && _diskID.gameName[1] >= 0x20 && _diskID.gameName[2] >= 0x20 && _diskID.gameName[3] >= 0x20)
-							sprintf(console_text, "64DDdump 0.8  (Gray)\r\nNUD-%c%c%c%c-JPN.ndd LOG\r\n---", _diskID.gameName[0], _diskID.gameName[1], _diskID.gameName[2], _diskID.gameName[3]);
+							sprintf(console_text, "64DDdump 0.81 (Gray)\r\nNUD-%c%c%c%c-JPN.ndd LOG\r\n---", _diskID.gameName[0], _diskID.gameName[1], _diskID.gameName[2], _diskID.gameName[3]);
 						else
-							sprintf(console_text, "64DDdump 0.8  (Gray)\r\nNUD-DUMP-JPN.ndd LOG\r\n---");
+							sprintf(console_text, "64DDdump 0.81 (Gray)\r\nNUD-DUMP-JPN.ndd LOG\r\n---");
 					}
 					else
 					{
 						if (_diskID.gameName[0] >= 0x20 && _diskID.gameName[1] >= 0x20 && _diskID.gameName[2] >= 0x20 && _diskID.gameName[3] >= 0x20)
-							sprintf(console_text, "64DDdump 0.8  (Blue)\r\nNUD-%c%c%c%c-JPN.ndd LOG\r\n---", _diskID.gameName[0], _diskID.gameName[1], _diskID.gameName[2], _diskID.gameName[3]);
+							sprintf(console_text, "64DDdump 0.81 (Blue)\r\nNUD-%c%c%c%c-JPN.ndd LOG\r\n---", _diskID.gameName[0], _diskID.gameName[1], _diskID.gameName[2], _diskID.gameName[3]);
 						else
-							sprintf(console_text, "64DDdump 0.8  (Blue)\r\nNUD-DUMP-JPN.ndd LOG\r\n---");
+							sprintf(console_text, "64DDdump 0.81 (Blue)\r\nNUD-DUMP-JPN.ndd LOG\r\n---");
 					}
 					
 					strcpy(logstr, console_text);
