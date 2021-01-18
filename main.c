@@ -1,4 +1,4 @@
-//64DD Dump 0.81
+//64DD Dump 0.9
 //Based on pfs SDK demo
 
 #include	<ultra64.h>
@@ -339,7 +339,7 @@ void mainproc(void *arg)
 	
 	//Render Text
 	setcolor(255,255,255);
-	draw_puts("\f\n    64DD Disk Dumper v0.81 - by LuigiBlood & marshallh\n    ----------------------------------------\n");
+	draw_puts("\f\n    64DD Disk Dumper v0.9 - by LuigiBlood & marshallh\n    ----------------------------------------\n");
 	if (error != LEO_ERROR_GOOD)
 	{
 		draw_puts("\f\n\n    Leo Manager Error: ");
@@ -540,11 +540,13 @@ void mainproc(void *arg)
 					{	
 						DUMPTYPE = 1;
 						menumode = 1;
+						menuselect = 0;
 					}
 					else
 					{
 						DUMPTYPE = menuselect;
 						menumode = 2;
+						menuselect = 0;
 					}
 				}
 			}
@@ -589,6 +591,10 @@ void mainproc(void *arg)
 			}
 			else if (menumode == 2)
 			{
+				menumode = 10;
+			}
+			else if (menumode == 10)
+			{
 				setcolor(255,255,255);
 				draw_puts("                                                                      \n");
 				draw_puts("    DO NOT TURN OFF THE SYSTEM OR REMOVE THE DISK                     \n");
@@ -601,6 +607,16 @@ void mainproc(void *arg)
 				//64drive, enable write to SDRAM/ROM
 				srand(osGetCount()); // necessary to generate unique short 8.3 filenames on memory card
 				ciEnableRomWrites();
+
+				//Set Filenames
+				if (*((u32*)&LEO_sys_data[0]) == LEO_COUNTRY_JPN)
+					set_filenames(_diskID.gameName, "JPN");
+				else if (*((u32*)&LEO_sys_data[0]) == LEO_COUNTRY_USA)
+					set_filenames(_diskID.gameName, "USA");
+				else if (*((u32*)&LEO_sys_data[0]) == LEO_COUNTRY_NONE)
+					set_filenames(_diskID.gameName, "DEV");
+				else
+					set_filenames(_diskID.gameName, "UNK");
 				
 				//Set LBA ranges (already loaded thanks to ReadDiskID)
 				setLBARange();
@@ -619,7 +635,7 @@ void mainproc(void *arg)
 					{
 						//PAUSE CODE
 						readController();
-						draw_puts("\f\n\n\n\n\n\n\n\n\n    --- PAUSED --- Press START to resume the dump.                    ");
+						draw_puts("\f\n\n\n\n\n\n\n\n\n    --- PAUSED --- Press START to resume the dump.");
 						
 						if (selectLBA < LBA_ranges[1])
 						{
@@ -752,16 +768,16 @@ void mainproc(void *arg)
 					if (isDiskDebug() == 0)
 					{
 						if (_diskID.gameName[0] >= 0x20 && _diskID.gameName[1] >= 0x20 && _diskID.gameName[2] >= 0x20 && _diskID.gameName[3] >= 0x20)
-							sprintf(console_text, "64DDdump 0.81 (Gray)\r\nNUD-%c%c%c%c-JPN.ndd LOG\r\n---", _diskID.gameName[0], _diskID.gameName[1], _diskID.gameName[2], _diskID.gameName[3]);
+							sprintf(console_text, "64DDdump 0.9  (Gray)\r\nNUD-%c%c%c%c-JPN.ndd LOG\r\n---", _diskID.gameName[0], _diskID.gameName[1], _diskID.gameName[2], _diskID.gameName[3]);
 						else
-							sprintf(console_text, "64DDdump 0.81 (Gray)\r\nNUD-DUMP-JPN.ndd LOG\r\n---");
+							sprintf(console_text, "64DDdump 0.9  (Gray)\r\nNUD-DUMP-JPN.ndd LOG\r\n---");
 					}
 					else
 					{
 						if (_diskID.gameName[0] >= 0x20 && _diskID.gameName[1] >= 0x20 && _diskID.gameName[2] >= 0x20 && _diskID.gameName[3] >= 0x20)
-							sprintf(console_text, "64DDdump 0.81 (Blue)\r\nNUD-%c%c%c%c-JPN.ndd LOG\r\n---", _diskID.gameName[0], _diskID.gameName[1], _diskID.gameName[2], _diskID.gameName[3]);
+							sprintf(console_text, "64DDdump 0.9  (Blue)\r\nNUD-%c%c%c%c-JPN.ndd LOG\r\n---", _diskID.gameName[0], _diskID.gameName[1], _diskID.gameName[2], _diskID.gameName[3]);
 						else
-							sprintf(console_text, "64DDdump 0.81 (Blue)\r\nNUD-DUMP-JPN.ndd LOG\r\n---");
+							sprintf(console_text, "64DDdump 0.9  (Blue)\r\nNUD-DUMP-JPN.ndd LOG\r\n---");
 					}
 					
 					strcpy(logstr, console_text);

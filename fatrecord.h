@@ -5,6 +5,24 @@ fat_dirent	de_next;
 char		fat_message[50];
 short		fail;
 
+char		filename_ndd[256];
+char		filename_log[256];
+
+void set_filenames(char* diskIDstr, char* region)
+{
+	if (_diskID.gameName[0] >= 0x20 && _diskID.gameName[1] >= 0x20 && _diskID.gameName[2] >= 0x20 && _diskID.gameName[3] >= 0x20
+	&& _diskID.gameName[0] < 0x7B && _diskID.gameName[1] < 0x7B && _diskID.gameName[2] < 0x7B && _diskID.gameName[3] < 0x7B)
+	{
+		sprintf(filename_ndd, "NUD-%c%c%c%c-%s.ndd", diskIDstr[0], diskIDstr[1], diskIDstr[2], diskIDstr[3], region);
+		sprintf(filename_log, "NUD-%c%c%c%c-%s.log", diskIDstr[0], diskIDstr[1], diskIDstr[2], diskIDstr[3], region);
+	}
+	else
+	{
+		sprintf(filename_ndd, "NUD-DUMP-%s.ndd", region);
+		sprintf(filename_log, "NUD-DUMP-%s.log", region);
+	}
+}
+
 int fs_fail()
 {
 	char wait_message[50];
@@ -15,8 +33,6 @@ int fs_fail()
 
 void fat_start(char diskIDstr[])
 {
-	char filenamestr[20];
-	//char filenamelogstr[20];
 	char console_text[50];
 	fat_dirent de_root;
 	fat_dirent user_dump;
@@ -26,17 +42,14 @@ void fat_start(char diskIDstr[])
 
 	if(fw < 2.00 || fw > 20.00 || !is64drive)
 	{
-    		draw_puts("\n    - ERROR WRITING TO MEMORY CARD:\n    64DRIVE with FIRMWARE 2.00 or later is required!");
+    	draw_puts("\n    - ERROR WRITING TO MEMORY CARD:\n    64DRIVE with FIRMWARE 2.00 or later is required!");
 		while(1);
 	}
 	
 	sprintf(console_text, "\n    - 64drive with firmware %.2f found", fw);
 	draw_puts(console_text);
-  
-	sprintf(filenamestr, "NUD-%c%c%c%c-JPN.ndd", diskIDstr[0], diskIDstr[1], diskIDstr[2], diskIDstr[3]);
-	//sprintf(filenamelogstr, "NUD-%c%c%c%c-JPN.log", diskIDstr[0], diskIDstr[1], diskIDstr[2], diskIDstr[3]);
 
-	sprintf(console_text, "\n    - Writing %s to memory card, please wait...", filenamestr);
+	sprintf(console_text, "\n    - Writing %s to memory card, please wait...", filename_ndd);
 	draw_puts(console_text);
   
 	// get FAT going
@@ -55,7 +68,7 @@ void fat_start(char diskIDstr[])
 		return;
 	}
 	
-	if( fat_find_create(filenamestr, &de_root, &user_dump, 0, 1) != 0)
+	if( fat_find_create(filename_ndd, &de_root, &user_dump, 0, 1) != 0)
 	{
 		sprintf(fat_message, "Failed to create image dump"); fail = 3;
 		fs_fail(); return;
@@ -72,7 +85,6 @@ void fat_start(char diskIDstr[])
 
 void fat_startlog(char diskIDstr[], u32 size)
 {
-	char filenamestr[20];
 	char console_text[50];
 	fat_dirent de_root;
 	fat_dirent user_dump;
@@ -85,13 +97,8 @@ void fat_startlog(char diskIDstr[], u32 size)
 		draw_puts("\n    - ERROR WRITING TO MEMORY CARD:\n    64DRIVE with FIRMWARE 2.00 or later is required!");
 		while(1);
 	}
-  
-	//sprintf(console_text, "\n    - 64drive with firmware %.2f found", fw);
-	//draw_puts(console_text);
-  
-	sprintf(filenamestr, "NUD-%c%c%c%c-JPN.log", diskIDstr[0], diskIDstr[1], diskIDstr[2], diskIDstr[3]);
 
-	sprintf(console_text, "\n    - Writing %s to memory card", filenamestr);
+	sprintf(console_text, "\n    - Writing %s to memory card", filename_log);
 	draw_puts(console_text);
   
 	// get FAT going
@@ -111,7 +118,7 @@ void fat_startlog(char diskIDstr[], u32 size)
 	}
   
   
-	if( fat_find_create(filenamestr, &de_root, &user_dump, 0, 1) != 0)
+	if( fat_find_create(filename_log, &de_root, &user_dump, 0, 1) != 0)
 	{
 		sprintf(fat_message, "Failed to create image dump"); fail = 3;
 		fs_fail(); return;
