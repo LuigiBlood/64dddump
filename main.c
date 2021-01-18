@@ -756,29 +756,16 @@ void mainproc(void *arg)
 				draw_puts("\n");
 				
 				//Write Dump to SD Card
-				if (_diskID.gameName[0] >= 0x20 && _diskID.gameName[1] >= 0x20 && _diskID.gameName[2] >= 0x20 && _diskID.gameName[3] >= 0x20)
-					fat_start(_diskID.gameName);
-				else
-					fat_start("DUMP");
+				fat_start(filename_ndd, 0x3DEC800);
 				
 				//Write Log to SD Card
 				if (errorsLBA > 0)
 				{
 					char logstr[(errorsLBA * 16) + 49];
 					if (isDiskDebug() == 0)
-					{
-						if (_diskID.gameName[0] >= 0x20 && _diskID.gameName[1] >= 0x20 && _diskID.gameName[2] >= 0x20 && _diskID.gameName[3] >= 0x20)
-							sprintf(console_text, "64DDdump 0.9  (Gray)\r\nNUD-%c%c%c%c-JPN.ndd LOG\r\n---", _diskID.gameName[0], _diskID.gameName[1], _diskID.gameName[2], _diskID.gameName[3]);
-						else
-							sprintf(console_text, "64DDdump 0.9  (Gray)\r\nNUD-DUMP-JPN.ndd LOG\r\n---");
-					}
+						sprintf(console_text, "64DDdump 0.9  (Gray)\r\n%s LOG\r\n---", filename_ndd);
 					else
-					{
-						if (_diskID.gameName[0] >= 0x20 && _diskID.gameName[1] >= 0x20 && _diskID.gameName[2] >= 0x20 && _diskID.gameName[3] >= 0x20)
-							sprintf(console_text, "64DDdump 0.9  (Blue)\r\nNUD-%c%c%c%c-JPN.ndd LOG\r\n---", _diskID.gameName[0], _diskID.gameName[1], _diskID.gameName[2], _diskID.gameName[3]);
-						else
-							sprintf(console_text, "64DDdump 0.9  (Blue)\r\nNUD-DUMP-JPN.ndd LOG\r\n---");
-					}
+						sprintf(console_text, "64DDdump 0.9  (Blue)\r\n%s LOG\r\n---", filename_ndd);
 					
 					strcpy(logstr, console_text);
 					
@@ -796,11 +783,8 @@ void mainproc(void *arg)
 					
 					osWritebackDCacheAll();
 					copytoCart((void *)&logstr, 0xB0000000, ((errorsLBA * 16) + 49));
-					
-					if (_diskID.gameName[0] >= 0x20 && _diskID.gameName[1] >= 0x20 && _diskID.gameName[2] >= 0x20 && _diskID.gameName[3] >= 0x20)
-						fat_startlog(_diskID.gameName, ((errorsLBA * 16) + 49));
-					else
-						fat_startlog("DUMP", ((errorsLBA * 16) + 49));
+
+					fat_start(filename_log, ((errorsLBA * 16) + 49));
 				}
 				
 				draw_puts("\n    - DONE !!\n");

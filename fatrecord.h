@@ -31,59 +31,7 @@ int fs_fail()
 	return 0;
 }
 
-void fat_start(char diskIDstr[])
-{
-	char console_text[50];
-	fat_dirent de_root;
-	fat_dirent user_dump;
-	float fw = ((float)ciGetRevision())/100.0f;
-	u32 device_magic = ciGetMagic();
-	u32 is64drive = (ciGetMagic() == 0x55444556);
-
-	if(fw < 2.00 || fw > 20.00 || !is64drive)
-	{
-    	draw_puts("\n    - ERROR WRITING TO MEMORY CARD:\n    64DRIVE with FIRMWARE 2.00 or later is required!");
-		while(1);
-	}
-	
-	sprintf(console_text, "\n    - 64drive with firmware %.2f found", fw);
-	draw_puts(console_text);
-
-	sprintf(console_text, "\n    - Writing %s to memory card, please wait...", filename_ndd);
-	draw_puts(console_text);
-  
-	// get FAT going
-	if(fat_init() != 0)
-	{
-		fail = 100;
-		fs_fail();
-		return;
-	}
-	
-	// start in root directory
-	fat_root_dirent(&de_root);
-	if(fail != 0)
-	{
-		fs_fail();
-		return;
-	}
-	
-	if( fat_find_create(filename_ndd, &de_root, &user_dump, 0, 1) != 0)
-	{
-		sprintf(fat_message, "Failed to create image dump"); fail = 3;
-		fs_fail(); return;
-	}
-	
-	if( fat_set_size(&user_dump, 0x3DEC800) != 0)
-	{
-		sprintf(fat_message, "Failed to resize dump"); fail = 4;
-		fs_fail(); return;
-	}
-
-	loadRamToRom(0x0, user_dump.start_cluster);
-}
-
-void fat_startlog(char diskIDstr[], u32 size)
+void fat_start(char* filename_use, u32 size)
 {
 	char console_text[50];
 	fat_dirent de_root;
@@ -98,7 +46,7 @@ void fat_startlog(char diskIDstr[], u32 size)
 		while(1);
 	}
 
-	sprintf(console_text, "\n    - Writing %s to memory card", filename_log);
+	sprintf(console_text, "\n    - Writing %s to memory card", filename_use);
 	draw_puts(console_text);
   
 	// get FAT going
@@ -118,7 +66,7 @@ void fat_startlog(char diskIDstr[], u32 size)
 	}
   
   
-	if( fat_find_create(filename_log, &de_root, &user_dump, 0, 1) != 0)
+	if( fat_find_create(filename_use, &de_root, &user_dump, 0, 1) != 0)
 	{
 		sprintf(fat_message, "Failed to create image dump"); fail = 3;
 		fs_fail(); return;
