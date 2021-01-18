@@ -787,7 +787,7 @@ void mainproc(void *arg)
 					fat_start(filename_log, ((errorsLBA * 16) + 49));
 				}
 				
-				draw_puts("\n    - DONE !!\n");
+				draw_puts("\n    - DONE, please power off the console.\n");
 			
 				for(;;);
 			}
