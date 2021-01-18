@@ -11,6 +11,7 @@
 
 #include	"fat32.h"
 #include	"ci.h"
+#include	"usb.h"
 #include "gamelist.h"
 #include "leohax.h"
 
@@ -79,6 +80,7 @@ static u16	logData[19720];
 
 static int 	DISKID_READ;
 static int	DUMPTYPE;	//0 = SKIP, 1 = FORCE
+static int	DUMPDEST;	//0 = SD, 1 = USB (UNFL), 2 = ROM
 
 //LBA skip stuff
 #define MAX_ERROR_SKIP 5
@@ -261,6 +263,22 @@ void copytoCart(const char *src, const char *dest, const int len)
 	osRecvMesg(&dmaMessageQ, &dummyMesg, OS_MESG_BLOCK);
 }
 
+void usbFileSet(const char *file, const u32 size)
+{
+	u8 data[256];
+	*(u32*)&data[0] = DATATYPE_FILE;		//File
+	*(u32*)&data[4] = size;					//Size
+	*(u32*)&data[8] = 0;					//Dummy
+	bcopy(file, data + 12, 256-12);	//Filename
+
+	usb_write(DATATYPE_HEADER, data, 256);
+}
+
+void usbFileCopy(const char *src, const u32 len)
+{
+	usb_write(DATATYPE_FILE, src, len);
+}
+
 void mainproc(void *arg)
 {
 	int i, j;
@@ -327,6 +345,9 @@ void mainproc(void *arg)
 	//Init PI Manager
 	osCreatePiManager((OSPri)OS_MESG_PRI_NORMAL, &dmaMessageQ, dmaMessageBuf, DMA_QUEUE_SIZE);
 	
+	//Do UNFLoader Library Initialization
+	usb_initialize();
+
 	//HAX 64DD
 	haxAll();
 	
@@ -504,7 +525,7 @@ void mainproc(void *arg)
 		{
 			if (menumode == 0)
 			{
-				//Render Menu
+				//Main Menu
 				setcolor(255,255,255);			
 				if (menuselect == 0) setcolor(0,255,0);
 				if (isDiskDebug()) setcolor(100,100,100);
@@ -547,12 +568,15 @@ void mainproc(void *arg)
 						DUMPTYPE = menuselect;
 						menumode = 2;
 						menuselect = 0;
+
+						if (usb_getcart() != CART_64DRIVE)
+							menuselect = 1;
 					}
 				}
 			}
 			else if (menumode == 1)
 			{
-				//Render Menu
+				//Fast Dump Menu
 				setcolor(255,255,255);			
 				if (menuselect == 0) setcolor(0,255,0);
 				draw_puts("    - 32 RETRIES, 1 second per bad block                              \n");
@@ -587,14 +611,56 @@ void mainproc(void *arg)
 						haxReadErrorRetry(8);
 				
 					menumode = 2;
+					menuselect = 0;
+					if (usb_getcart() != CART_64DRIVE)
+						menuselect = 1;
 				}
 			}
 			else if (menumode == 2)
 			{
-				menumode = 10;
+				//Dump Destination Menu
+				if (usb_getcart() == CART_NONE)
+					menuselect = 2;
+
+				setcolor(255,255,255);			
+				if (menuselect == 0) setcolor(0,255,0);
+				if (usb_getcart() != CART_64DRIVE) setcolor(100,100,100);
+				draw_puts("    - Dump to SD Card (64drive only)                                  \n");
+				setcolor(255,255,255);
+				if (menuselect == 1) setcolor(0,255,0);
+				if (usb_getcart() == CART_NONE) setcolor(100,100,100);
+				draw_puts("    - Dump to PC via USB (UNFLoader)                                  \n");
+				setcolor(255,255,255);
+				if (menuselect == 2) setcolor(0,255,0);
+				draw_puts("    - Dump to ROM Area (Use USB Tool to dump ROM from flashcart)      \n");
+				
+				if (newbutton & D_JPAD)
+				{
+					menuselect++;
+					if (menuselect > 2)
+						menuselect = 0;
+					if (usb_getcart() != CART_64DRIVE && menuselect == 0)
+						menuselect = 1;
+				}
+				
+				if (newbutton & U_JPAD)
+				{
+					if (menuselect <= 0)
+						menuselect = 3;
+					menuselect--;
+					if (usb_getcart() != CART_64DRIVE && menuselect == 0)
+						menuselect = 2;
+				}
+				
+				if (newbutton & A_BUTTON)
+				{
+					DUMPDEST = menuselect;
+					menumode = 10;
+				}
 			}
 			else if (menumode == 10)
 			{
+				//Dump Mode
 				setcolor(255,255,255);
 				draw_puts("                                                                      \n");
 				draw_puts("    DO NOT TURN OFF THE SYSTEM OR REMOVE THE DISK                     \n");
@@ -617,6 +683,9 @@ void mainproc(void *arg)
 					set_filenames(_diskID.gameName, "DEV");
 				else
 					set_filenames(_diskID.gameName, "UNK");
+				
+				if (DUMPDEST == 1)
+					usbFileSet(filename_ndd, 0x3DEC800);
 				
 				//Set LBA ranges (already loaded thanks to ReadDiskID)
 				setLBARange();
@@ -750,13 +819,16 @@ void mainproc(void *arg)
 					//Copy Data to ROM
 					osWritebackDCacheAll();
 					copytoCart((void *)&blockData, 0xB0000000 + totalLBAsize(selectLBA), LBAsize);
+					if (DUMPDEST == 1)
+						usbFileCopy(blockData, LBAsize);
 				}
 				
 				//DUMP IS DONE
 				draw_puts("\n");
 				
 				//Write Dump to SD Card
-				fat_start(filename_ndd, 0x3DEC800);
+				if (DUMPDEST == 0)
+					fat_start(filename_ndd, 0x3DEC800);
 				
 				//Write Log to SD Card
 				if (errorsLBA > 0)
@@ -784,7 +856,13 @@ void mainproc(void *arg)
 					osWritebackDCacheAll();
 					copytoCart((void *)&logstr, 0xB0000000, ((errorsLBA * 16) + 49));
 
-					fat_start(filename_log, ((errorsLBA * 16) + 49));
+					if (DUMPDEST == 0)
+						fat_start(filename_log, ((errorsLBA * 16) + 49));
+					else if (DUMPDEST == 1)
+					{
+						usbFileSet(filename_log, ((errorsLBA * 16) + 49));
+						usbFileCopy(logstr, ((errorsLBA * 16) + 49));
+					}
 				}
 				
 				draw_puts("\n    - DONE, please power off the console.\n");

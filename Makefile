@@ -29,7 +29,7 @@ TEXHFILES =	textlib.h
 
 HFILES =	$(TEXHFILES) thread.h ncode.h
 
-CODEFILES   =	main.c nu64sys.c textlib.c asci.c ci.c fat32.c
+CODEFILES   =	main.c nu64sys.c textlib.c asci.c ci.c fat32.c usb.c
 
 CODEOBJECTS =	$(CODEFILES:.c=.o)
 
