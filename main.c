@@ -829,6 +829,18 @@ void mainproc(void *arg)
 				//Write Dump to SD Card
 				if (DUMPDEST == 0)
 					fat_start(filename_ndd, 0x3DEC800);
+				else if (DUMPDEST == 2)
+				{
+					while (newbutton & A_BUTTON)
+						readController();
+					draw_puts("    - Please DUMP 0x3DEC800 bytes of the ROM Area for the Disk.\n");
+					draw_puts("    Use the USB tool. Press A once the dump is done.\n");
+					do
+					{
+						readController();
+					}
+					while (!(newbutton & A_BUTTON));
+				}
 				
 				//Write Log to SD Card
 				if (errorsLBA > 0)
@@ -865,6 +877,10 @@ void mainproc(void *arg)
 					}
 				}
 				
+				if (DUMPDEST == 2)
+				{
+					draw_puts("    - Please DUMP 0x200000 bytes of the ROM Area for the Log.\n");
+				}
 				draw_puts("\n    - DONE, please power off the console.\n");
 			
 				for(;;);
