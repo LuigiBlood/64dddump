@@ -3,8 +3,5 @@ by LuigiBlood & marshallh
 
 Dumps your 64DD disk on 64drive SD/CF card.
 
-
-I left main053g.c for 64DDdump 0.53 (Gray).
-
-
-READ HACKS for the hacks needed for any version before 0.70.
+This version requires the Modern SDK setup that can be found here:
+https://crashoveride95.github.io/n64hbrew/modernsdk/index.html

@@ -3,7 +3,7 @@
 //
 
 #include <ultra64.h>
-#include <math.h>
+#include <nustd/math.h>
 
 #include "fat32.h"
 #include "ci.h"

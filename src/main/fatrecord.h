@@ -2,7 +2,7 @@
 //fat_dirent  de_root;
 fat_dirent	de_current;
 fat_dirent	de_next;
-char		fat_message[50];
+char		fat_message2[50];
 short		fail;
 
 char		filename_ndd[256];
@@ -26,7 +26,7 @@ void set_filenames(char* diskIDstr, char* region)
 int fs_fail()
 {
 	char wait_message[50];
-	sprintf(wait_message, "\n    Error (%i): %s", fail, fat_message);
+	sprintf(wait_message, "\n    Error (%i): %s", fail, fat_message2);
 	draw_puts(wait_message);
 	return 0;
 }
@@ -68,13 +68,13 @@ void fat_start(char* filename_use, u32 size)
   
 	if( fat_find_create(filename_use, &de_root, &user_dump, 0, 1) != 0)
 	{
-		sprintf(fat_message, "Failed to create image dump"); fail = 3;
+		sprintf(fat_message2, "Failed to create image dump"); fail = 3;
 		fs_fail(); return;
 	}
 
 	if( fat_set_size(&user_dump, size) != 0)
 	{
-		sprintf(fat_message, "Failed to resize dump"); fail = 4;
+		sprintf(fat_message2, "Failed to resize dump"); fail = 4;
 		fs_fail(); return;
 	}
 

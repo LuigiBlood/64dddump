@@ -6,8 +6,8 @@
 #include	"thread.h"
 #include	"textlib.h"
 #include	"ncode.h"
-#include	<math.h>
-#include	<string.h>
+#include	<nustd/math.h>
+#include	<nustd/string.h>
 
 #include	"fat32.h"
 #include	"ci.h"
