@@ -5,6 +5,7 @@
 #include	<PR/leo.h>
 #include	<nustd/math.h>
 #include	<nustd/string.h>
+#include	<nustd/stdlib.h>
 
 #include	"thread.h"
 #include	"textlib.h"
@@ -14,6 +15,8 @@
 
 #include	"gamelist.h"
 #include	"leohax.h"
+#include	"leotest.h"
+#include	"asicdrive.h"
 
 #define	NUM_MESSAGE 	1
 
@@ -48,11 +51,6 @@ OSMesg		dmaMessageBuf[DMA_QUEUE_SIZE];
 OSIoMesg	dmaIOMessageBuf;
 
 OSPiHandle *pi_handle;
-OSPiHandle *LeoDiskHandle;
-OSPiHandle *DriveRomHandle;
-
-#include	"asicdrive.h"
-#include	"leotest.h"
 
 //64DD
 #define	DISK_MSG_NUM	1
@@ -66,7 +64,6 @@ LEOStatus		leostat;
 LEODiskID		_diskID ,_savedID;
 static LEOCapacity	_leoCapacity;
 static LEOCmd		_cmdBlk;
-static LEOVersion	_leover;
 
 static u32	selectLBA;
 static u32	skipLBA;
@@ -115,7 +112,7 @@ void setDefaultLBARange()
 
 void setLBARange()
 {
-	if (isDiskDebug() == 0)
+	if (GetDriveType() == 0)
 	{
 		//LBA_ranges[0] = ROM Area LBA End
 		//LBA_ranges[1] = RAM Area LBA Start
@@ -181,41 +178,6 @@ int errorread(int error)
 	}
 }
 
-int isDiskPresent()
-{
-	u32 data = ReadLeoReg(ASIC_STATUS);
-	if ((data & 0x01000000) == 0x01000000)
-		return 1; //Disk Present
-	else
-		return 0; //Disk NOT present
-}
-
-int isDiskChanged()
-{
-	u32 data = ReadLeoReg(ASIC_STATUS);
-	if ((data & 0x00010000) == 0x00010000)
-		return 1; //Disk Changed
-	else
-		return 0; //Disk NOT changed
-}
-
-int isDiskDebug()
-{
-	LeoInquiry(&_leover);
-	if ((_leover.drive & 0x0F) == 0x04)
-		return 1; //DEVELOPMENT DRIVE
-	else
-		return 0; //RETAIL DRIVE
-}
-
-u32 driveType()
-{
-	u32 data = 0;
-	osEPiReadIo(DriveRomHandle, 0xA609FF00, &data);
-	data = data >> 24;
-	return data;
-}
-
 u16 readController()
 {
 	osContStartReadData(&pifMesgQueue);
@@ -249,7 +211,7 @@ void skipToLBA(u32 lba)
 	skipLBA = lba;
 }
 
-void copytoCart(const char *src, const char *dest, const int len)
+void copytoCart(char *src, char *dest, const int len)
 {
 	OSIoMesg dmaIoMesgBuf;
 	OSMesg dummyMesg;
@@ -341,6 +303,8 @@ void mainproc(void *arg)
 	//Render Text
 	setcolor(255,255,255);
 	draw_puts("\f\n    64DD Disk Dumper v0.10 - by LuigiBlood & marshallh\n    ----------------------------------------\n");
+
+	//Check if Leo Manager is indeed active
 	if (error != LEO_ERROR_GOOD)
 	{
 		draw_puts("\f\n\n    Leo Manager Error: ");
@@ -353,34 +317,42 @@ void mainproc(void *arg)
 		for (;;);
 	}
 	
-	if (isDiskDebug() == 0)
+	//Show Drive Type
+	if (GetDriveType() == 0)
 	{
 		setcolor(128,128,128);
 		draw_puts("    --- Retail Drive ");
 	}
-	else
+	else if (GetDriveType() == 1)
 	{
 		setcolor(100,100,255);
 		draw_puts("    --- Development Drive ");
 	}
+	else
+	{
+		setcolor(170,170,170);
+		draw_puts("    --- Writer Drive ");
+	}
 	
-	if (driveType() == 0xC3)
+	//Show Drive IPL Region
+	if (GetDriveIPLRegion() == 0xC3)
 	{
 		draw_puts("/ JPN ");
 	}
-	else if (driveType() == 0x04)
+	else if (GetDriveIPLRegion() == 0x04)
 	{
 		draw_puts("/ USA ");
 	}
 	else
 	{
-		sprintf(console_text, "/ %02X ", driveType());
+		sprintf(console_text, "/ %02X ", GetDriveIPLRegion());
 		draw_puts(console_text);
 	}
 	draw_puts("---\n");
 	
 	setcolor(255,255,255);
-	//LeoInquiry
+
+	//Show LeoInquiry Info
 	LeoInquiry(&_leover);
 	sprintf(console_text, "    Drive Ver: %02X / Driver Ver: %02X / Drive Type: %02X\n", _leover.drive, _leover.driver, _leover.deviceType);
 	draw_puts(console_text);
@@ -392,6 +364,7 @@ void mainproc(void *arg)
 	{
 		//Read Controller
 		readController();
+
 		setcolor(255,255,255);
 		draw_puts("\f\n\n\n\n\n");
 		//Disk Present Test		
@@ -407,11 +380,13 @@ void mainproc(void *arg)
 			draw_puts("                                                                      \n");
 		}
 		
+		//Has Disk been newly inserted? Then read the Disk ID.
 		if (isDiskChanged() == 1)
 		{
 			DISKID_READ = 0;
 		}
 		
+		//Read Disk ID
 		if (DISKID_READ == 0 && isDiskPresent() == 1)
 		{
 			draw_puts("\f\n\n\n\n\n");
@@ -421,13 +396,16 @@ void mainproc(void *arg)
 			switch (error)
 			{
 				case LEO_ERROR_GOOD:
-					//It read Disk ID normally
+					//It reads Disk ID normally
+
+					//Show Disk ID
 					sprintf(console_text, "    Disk ID: %c%c%c%c", _diskID.gameName[0], _diskID.gameName[1], _diskID.gameName[2], _diskID.gameName[3]);
 					draw_puts(console_text);
 					draw_puts(" - ");
 					printGame(_diskID.gameName);
 					DISKID_READ = 1;
 					
+					//Show Disk Format Type and Region
 					sprintf(console_text, "\n    Disk Type: %02X - Disk Region: ", LEOdisk_type);
 					draw_puts(console_text);
 					if (*((u32*)&LEO_sys_data[0]) == LEO_COUNTRY_JPN)
@@ -480,10 +458,10 @@ void mainproc(void *arg)
 					}
 
 					//Use Formatting Info for dumping
-					if (isDiskDebug())
-						bcopy(blockData, LEO_sys_data, 0xC0);
+					if (GetDriveType() == 1)
+						bcopy(blockData, LEO_sys_data, 0xC0);	//Development Drive
 					else
-						bcopy(blockData, LEO_sys_data, 0xE8);
+						bcopy(blockData, LEO_sys_data, 0xE8);	//Retail and Writer Drive
 					
 					DISKID_READ = 1;
 					LEOdisk_type = 0;	//Read in Disk Type 0 by default
@@ -495,12 +473,13 @@ void mainproc(void *arg)
 			}
 			
 			menumode = 0;
-			if (isDiskDebug())
+			//Skip Option is not accessible on Dev Drives
+			if (GetDriveType() == 1)
 				menuselect = 1;
 		}
 		
 		draw_puts("\f\n\n\n\n\n\n\n");
-		// MENU, only care if a disk is present
+		// MENU, only show if a disk is present
 		if (DISKID_READ == 1)
 		{
 			if (menumode == 0)
@@ -508,7 +487,7 @@ void mainproc(void *arg)
 				//Render Menu
 				setcolor(255,255,255);			
 				if (menuselect == 0) setcolor(0,255,0);
-				if (isDiskDebug()) setcolor(100,100,100);
+				if (GetDriveType() == 1) setcolor(100,100,100);
 				draw_puts("    - SKIP DUMP (Skips unformatted blocks, retail disk only)          \n");
 				setcolor(255,255,255);
 				if (menuselect == 1) setcolor(0,255,0);
@@ -522,7 +501,7 @@ void mainproc(void *arg)
 					menuselect++;
 					if (menuselect > 2)
 						menuselect = 0;
-					if (isDiskDebug() && menuselect == 0)
+					if (GetDriveType() == 1 && menuselect == 0)
 						menuselect = 1;
 				}
 				
@@ -531,7 +510,7 @@ void mainproc(void *arg)
 					if (menuselect <= 0)
 						menuselect = 3;
 					menuselect--;
-					if (isDiskDebug() && menuselect == 0)
+					if (GetDriveType() == 1 && menuselect == 0)
 						menuselect = 2;
 				}
 				
@@ -622,7 +601,7 @@ void mainproc(void *arg)
 				//Set LBA ranges (already loaded thanks to ReadDiskID)
 				setLBARange();
 				
-				//Dumping code
+				//Dumping Disk
 				for (selectLBA = 0; selectLBA < 0x10DC; selectLBA += 1)
 				{
 					//Read Controller to get button presses
@@ -763,10 +742,10 @@ void mainproc(void *arg)
 				if (errorsLBA > 0)
 				{
 					char logstr[(errorsLBA * 16) + 49];
-					if (isDiskDebug() == 0)
-						sprintf(console_text, "64DDdump 0.9  (Gray)\r\n%s LOG\r\n---", filename_ndd);
+					if (GetDriveType() != 1)
+						sprintf(console_text, "64DDdump 0.10 (Gray)\r\n%s LOG\r\n---", filename_ndd);
 					else
-						sprintf(console_text, "64DDdump 0.9  (Blue)\r\n%s LOG\r\n---", filename_ndd);
+						sprintf(console_text, "64DDdump 0.10 (Blue)\r\n%s LOG\r\n---", filename_ndd);
 					
 					strcpy(logstr, console_text);
 					

@@ -4,6 +4,8 @@
 
 #include <ultra64.h>
 #include <nustd/math.h>
+#include <nustd/string.h>
+#include <nustd/stdlib.h>
 
 #include "fat32.h"
 #include "ci.h"

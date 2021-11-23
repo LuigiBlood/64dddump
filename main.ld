@@ -39,6 +39,7 @@ SECTIONS
       BUILD_DIR/src/main*.o(.text);
       BUILD_DIR/src/ci*.o(.text);
       BUILD_DIR/src/textlib*.o(.text);
+      BUILD_DIR/src/leo*.o(.text);
 
       */libultra_rom.a:*.o(.text);
       */libleo.a:*.o(.text);
@@ -48,6 +49,7 @@ SECTIONS
       BUILD_DIR/src/main*.o(.data*);
       BUILD_DIR/src/ci*.o(.data*);
       BUILD_DIR/src/textlib*.o(.data*);
+      BUILD_DIR/src/leo*.o(.data*);
 
       */libultra_rom.a:*.o(.data*);
       */libleo.a:*.o(.data*);
@@ -57,6 +59,7 @@ SECTIONS
       BUILD_DIR/src/main*.o(.*rodata*);
       BUILD_DIR/src/ci*.o(.*rodata*);
       BUILD_DIR/src/textlib*.o(.*rodata*);
+      BUILD_DIR/src/leo*.o(.*rodata*);
 
       */libultra_rom.a:*.o(.*rodata*);
       */libleo.a:*.o(.*rodata*);
@@ -69,6 +72,7 @@ SECTIONS
       BUILD_DIR/src/main*.o(.*bss*);
       BUILD_DIR/src/ci*.o(.*bss*);
       BUILD_DIR/src/textlib*.o(.*bss*);
+      BUILD_DIR/src/leo*.o(.*bss*);
 
       */libultra_rom.a:*.o(COMMON);
       */libultra_rom.a:*.o(.scommon);

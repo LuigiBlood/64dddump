@@ -1,3 +1,13 @@
+#include	<ultra64.h>
+#include	<PR/leo.h>
+#include	"textlib.h"
+#include	"asicdrive.h"
+#include	"leotest.h"
+
+OSPiHandle *LeoDiskHandle;
+OSPiHandle *DriveRomHandle;
+LEOVersion	_leover;
+
 void errorcheck(int error)
 {
 	setcolor(255,0,0);
@@ -120,9 +130,58 @@ void WriteLeoReg(u32 address, u32 data)
   osEPiWriteIo(LeoDiskHandle, address, data);
 }
 
+u32 DoLeoCommand(u32 cmd, u32 arg)
+{
+	WriteLeoReg(ASIC_DATA, arg);
+	WriteLeoReg(ASIC_CMD, cmd);
+	leoWait_mecha_cmd_done();
+	return ReadLeoReg(ASIC_DATA);
+}
+
 s32 GetSectorSize(s32 lba)
 {
   s32 bytes = 0;
   LeoLBAToByte(lba, 1, &bytes);
   return (bytes / USR_SECS_PER_BLK);
+}
+
+int isDiskPresent()
+{
+	u32 data = ReadLeoReg(ASIC_STATUS);
+	if ((data & 0x01000000) == 0x01000000)
+		return 1; //Disk Present
+	else
+		return 0; //Disk NOT present
+}
+
+int isDiskChanged()
+{
+	u32 data = ReadLeoReg(ASIC_STATUS);
+	if ((data & 0x00010000) == 0x00010000)
+		return 1; //Disk Changed
+	else
+		return 0; //Disk NOT changed
+}
+
+int GetDriveType()
+{
+	//Get ASIC Version
+	u32 asicver = DoLeoCommand(0x000A0000, 0);
+	if (asicver & 0xF0000000 == 0x70000000)
+		return 2; //WRITER DRIVE
+	
+	//Get Drive Version
+	LeoInquiry(&_leover);
+	if ((_leover.drive & 0x0F) == 0x04)
+		return 1; //DEVELOPMENT DRIVE
+	else
+		return 0; //RETAIL DRIVE
+}
+
+u32 GetDriveIPLRegion()
+{
+	u32 data = 0;
+	osEPiReadIo(DriveRomHandle, 0xA609FF00, &data);
+	data = data >> 24;
+	return data;
 }

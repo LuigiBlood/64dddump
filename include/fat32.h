@@ -111,6 +111,6 @@ static int 		_fat_load_file_sector(fat_file_t *file) ;
 static int 		_fat_seek(fat_file_t *file, uint32_t position);
 int 			fat_lseek(fat_file_t *file, int32_t offset, int whence);
 
-
+int             fat_init();
 
 #endif

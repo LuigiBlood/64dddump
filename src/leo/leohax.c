@@ -1,4 +1,7 @@
 //Access to libleo variables (2.0L)
+#include	<ultra64.h>
+#include	<PR/leo.h>
+#include	"leohax.h"
 
 #ifdef DEBUG
 #error Compiling this in this state will break hard. Compile it with FINAL=YES instead.
@@ -7,16 +10,6 @@
 #ifdef _LANGUAGE_C_PLUS_PLUS
 extern "C" {
 #endif
-
-//Variables
-extern u32 LEO_country_code;	//Disk Country Code Lock
-extern u8 LEOdisk_type;		//Current Disk Type
-extern u8 LEO_sys_data[0xE8];	//System Data
-extern u8 LEOdrive_flag;	//Is System Area Read (0xFF = Read, 0 = Not Read)
-extern u32 __leoActive;		//Is Leo Manager Active?
-
-#define haxSystemAreaReadSet()          (LEOdrive_flag = 0xff)
-#define haxSystemAreaReadClr()          (LEOdrive_flag = 0)
 
 //Functions
 extern void leoRead();			//Read LBAs
@@ -31,10 +24,6 @@ extern u32 LeoDriveExist();	//Read Drive IPL
 #ifdef _LANGUAGE_C_PLUS_PLUS
 }
 #endif
-
-#define LEO_COUNTRY_JPN		0xE848D316
-#define LEO_COUNTRY_USA		0x2263EE56
-#define LEO_COUNTRY_NONE	0x00000000
 
 //Hack libleo functions in real time (and avoid doing all the hax beforehand)
 void haxSystemAreaAccess()
