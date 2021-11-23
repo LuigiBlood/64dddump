@@ -729,7 +729,7 @@ void mainproc(void *arg)
 					
 					//Copy Data to ROM
 					osWritebackDCacheAll();
-					copytoCart((void *)&blockData, 0xB0000000 + totalLBAsize(selectLBA), LBAsize);
+					copytoCart((void *)&blockData, (char *)(0xB0000000 + totalLBAsize(selectLBA)), LBAsize);
 				}
 				
 				//DUMP IS DONE
@@ -762,7 +762,7 @@ void mainproc(void *arg)
 					}
 					
 					osWritebackDCacheAll();
-					copytoCart((void *)&logstr, 0xB0000000, ((errorsLBA * 16) + 49));
+					copytoCart((void *)&logstr, (char *)0xB0000000, ((errorsLBA * 16) + 49));
 
 					fat_start(filename_log, ((errorsLBA * 16) + 49));
 				}
