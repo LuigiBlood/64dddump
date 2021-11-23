@@ -3,16 +3,17 @@
 
 #include	<ultra64.h>
 #include	<PR/leo.h>
-#include	"thread.h"
-#include	"textlib.h"
-#include	"ncode.h"
 #include	<nustd/math.h>
 #include	<nustd/string.h>
 
+#include	"thread.h"
+#include	"textlib.h"
+
 #include	"fat32.h"
 #include	"ci.h"
-#include "gamelist.h"
-#include "leohax.h"
+
+#include	"gamelist.h"
+#include	"leohax.h"
 
 #define	NUM_MESSAGE 	1
 
@@ -339,7 +340,7 @@ void mainproc(void *arg)
 	
 	//Render Text
 	setcolor(255,255,255);
-	draw_puts("\f\n    64DD Disk Dumper v0.9 - by LuigiBlood & marshallh\n    ----------------------------------------\n");
+	draw_puts("\f\n    64DD Disk Dumper v0.10 - by LuigiBlood & marshallh\n    ----------------------------------------\n");
 	if (error != LEO_ERROR_GOOD)
 	{
 		draw_puts("\f\n\n    Leo Manager Error: ");
