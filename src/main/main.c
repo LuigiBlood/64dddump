@@ -69,11 +69,11 @@ static u32	selectLBA;
 static u32	skipLBA;
 static s32	LBAsize;
 
-static u8	blockData[19720];
+static u8	blockData[19720] __attribute__ ((aligned (8)));
 
 static u32	error_LBA;
 static u16	errorsLBA;
-static u16	logData[19720];
+static u16	logData[19720] __attribute__ ((aligned (8)));
 
 static int 	DISKID_READ;
 static int	DUMPTYPE;	//0 = SKIP, 1 = FORCE
