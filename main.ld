@@ -37,8 +37,7 @@ SECTIONS
    {
       BUILD_DIR/asm/entry.o(.start);
       BUILD_DIR/src/main*.o(.text);
-      BUILD_DIR/src/ci*.o(.text);
-      BUILD_DIR/src/textlib*.o(.text);
+      BUILD_DIR/src/ddtextlib*.o(.text);
       BUILD_DIR/src/leo*.o(.text);
 
       */libultra_rom.a:*.o(.text);
@@ -47,8 +46,7 @@ SECTIONS
       */libgcc.a:*.o(.text);
       /* data */
       BUILD_DIR/src/main*.o(.data*);
-      BUILD_DIR/src/ci*.o(.data*);
-      BUILD_DIR/src/textlib*.o(.data*);
+      BUILD_DIR/src/ddtextlib*.o(.data*);
       BUILD_DIR/src/leo*.o(.data*);
 
       */libultra_rom.a:*.o(.data*);
@@ -57,8 +55,7 @@ SECTIONS
 
       /* rodata */
       BUILD_DIR/src/main*.o(.*rodata*);
-      BUILD_DIR/src/ci*.o(.*rodata*);
-      BUILD_DIR/src/textlib*.o(.*rodata*);
+      BUILD_DIR/src/ddtextlib*.o(.*rodata*);
       BUILD_DIR/src/leo*.o(.*rodata*);
 
       */libultra_rom.a:*.o(.*rodata*);
@@ -70,8 +67,7 @@ SECTIONS
    BEGIN_NOLOAD(code)
    {
       BUILD_DIR/src/main*.o(.*bss*);
-      BUILD_DIR/src/ci*.o(.*bss*);
-      BUILD_DIR/src/textlib*.o(.*bss*);
+      BUILD_DIR/src/ddtextlib*.o(.*bss*);
       BUILD_DIR/src/leo*.o(.*bss*);
 
       */libultra_rom.a:*.o(COMMON);
@@ -93,6 +89,12 @@ SECTIONS
       BUILD_DIR/src/buffers/cfb.o(.*bss*);
    }
    END_NOLOAD(cfb)
+
+   BEGIN_SEG(ddfont, __romPos)
+   {
+      BUILD_DIR/data/ddfont.o(.*rodata*);
+   }
+   END_SEG(ddfont)
 
    /* Discard everything not specifically mentioned above. */
    /DISCARD/ :

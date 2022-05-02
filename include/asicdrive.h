@@ -1,3 +1,7 @@
+#ifndef __ASICDRIVE_H__
+#define __ASICDRIVE_H__
+//64DD Definitions
+
 #define USR_SECS_PER_BLK          85 /* Number of user sectors in a logical block */
 #define C2_SECS_PER_BLK            4 /* Number of C2 sectors in a logical block */
 #define GAP_SECS_PER_BLK           1 /* Number of GAP sectors in a logical block */
@@ -114,3 +118,4 @@
 /*------------------------------------*/
 #define BIT_INDEX_LOCK         0x60000000
 
+#endif /* __ASICDRIVE_H__ */
