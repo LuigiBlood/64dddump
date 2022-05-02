@@ -52,6 +52,21 @@ void dd_clearScreen()
 		*r++ = dd_bg_color;
 }
 
+//Fill Rectangle with Background Color
+void dd_clearRect(int x1, int y1, int x2, int y2)
+{
+	int i, j;
+	for (i = y1; i <= y2; i++)
+	{
+		if (i >= SCREEN_SIZE_Y) break;
+		for (j = x1; j <= x2; j++)
+		{
+			if (j >= SCREEN_SIZE_X) break;
+			bitmap_buf[(i * SCREEN_SIZE_X) + j] = dd_bg_color;
+		}
+	}
+}
+
 //Print single character on screen
 void dd_printChar(char c)
 {
