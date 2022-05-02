@@ -52,43 +52,7 @@ void dd_clearScreen()
 		*r++ = dd_bg_color;
 }
 
-//u8 dd_colorConv[] = {0x00, 0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77, 0x88, 0x99, 0xAA, 0xBB, 0xCC, 0xDD, 0xEE, 0xFF};
-u16 dd_colorConv[] = {
-	GPACK_RGBA5551(0x00,0x00,0x00,1),
-	GPACK_RGBA5551(0x11,0x11,0x11,1),
-	GPACK_RGBA5551(0x22,0x22,0x22,1),
-	GPACK_RGBA5551(0x33,0x33,0x33,1),
-	GPACK_RGBA5551(0x44,0x44,0x44,1),
-	GPACK_RGBA5551(0x55,0x55,0x55,1),
-	GPACK_RGBA5551(0x66,0x66,0x66,1),
-	GPACK_RGBA5551(0x77,0x77,0x77,1),
-	GPACK_RGBA5551(0x88,0x88,0x88,1),
-	GPACK_RGBA5551(0x99,0x99,0x99,1),
-	GPACK_RGBA5551(0xAA,0xAA,0xAA,1),
-	GPACK_RGBA5551(0xBB,0xBB,0xBB,1),
-	GPACK_RGBA5551(0xCC,0xCC,0xCC,1),
-	GPACK_RGBA5551(0xDD,0xDD,0xDD,1),
-	GPACK_RGBA5551(0xEE,0xEE,0xEE,1),
-	GPACK_RGBA5551(0xFF,0xFF,0xFF,1)
-	};
-
-int getRed(int x)
-{
-	return (x >> 11) & 0x1F;
-}
-int getGreen(int x)
-{
-	return (x >> 6) & 0x1F;
-}
-int getBlue(int x)
-{
-	return (x >> 1) & 0x1F;
-}
-u16 packColor(int r, int g, int b)
-{
-	return (r << 11 | g << 6 | b << 1 | 1);
-}
-
+//Print single character on screen
 void dd_printChar(char c)
 {
 	int i, j;
@@ -100,52 +64,68 @@ void dd_printChar(char c)
 	{
 		if (c == '\n')
 		{
+			//New Line
 			dd_screen_x = dd_screen_x_start;
 			dd_screen_y += LINE_HEIGHT;
 		}
 		return;
 	}
 
-	//Regular Characters (4BPP) bitmap_buf
+	//Regular Characters (I4)
+	//Proper Character Code for libleo
 	code = (c - 0x20) + dd_ascii_font;
+	//Get Offset and overall char info
 	offset = LeoGetAAdr(code, &dx, &dy, &cy) - dd_ascii_font_diff;
+	//Calculate proper image width
 	width = ((dx+1)&~1);
+	//Align chars on the same line
 	y_diff = LINE_HEIGHT - dy + (dy - cy);
 
 	for (i = 0; i < dy; i++)
 	{
-		if ((i + dd_screen_y) >= SCREEN_SIZE_Y) break;
+		//Avoid writing beyond the frame buffer
+		if ((i + dd_screen_y + y_diff) >= SCREEN_SIZE_Y) break;
 
 		for (j = 0; j < dx; j++)
 		{
+			//Avoid writing beyond the frame buffer
 			if ((j + dd_screen_x) >= SCREEN_SIZE_X) break;
 
+			//Get the Pixel Intensity Level
 			intensity = dd_afont_data[offset + (((i * width) + j) / 2)];
 			if ((j & 1) == 0) intensity >>= 4;
 			intensity &= 0x0F;
 
+			//Don't bother if there's no intensity (optimization)
+			if (intensity == 0) continue;
+
+			//Use color from frame buffer
 			dc = bitmap_buf[((dd_screen_y + i + y_diff) * SCREEN_SIZE_X) + (dd_screen_x + j)];
-			
+
+			//Calculate the difference and gradually set intensity
 			dr = getRed(dd_color) - getRed(dc);
 			dg = getGreen(dd_color) - getGreen(dc);
 			db = getBlue(dd_color) - getBlue(dc);
 			
-			dr /= 16.0;
-			dg /= 16.0;
-			db /= 16.0;
+			dr /= 15.0;
+			dg /= 15.0;
+			db /= 15.0;
 
 			dr = getRed(dc) + dr * intensity;
 			dg = getGreen(dc) + dg * intensity;
 			db = getBlue(dc) + db * intensity;
 
+			//Write the new color to the frame buffer
 			bitmap_buf[((dd_screen_y + i + y_diff) * SCREEN_SIZE_X) + (dd_screen_x + j)] = packColor(dr, dg, db);
 		}
 	}
 	osWritebackDCacheAll();
 
+	//Add char width + 1 to the current position
 	dd_screen_x += dx + 1;
 }
 
+//Print string on screen
 void dd_printText(char *s)
 {
 	dd_screen_x_start = dd_screen_x;

@@ -3,6 +3,7 @@
 #include	"ddtextlib.h"
 #include	"cart.h"
 
+//Initialize Screen
 void dd_initText(u8 font)
 {
 	u32 mode = RESOLUTION;
@@ -37,7 +38,7 @@ void dd_initText(u8 font)
 	dd_loadTextFont(font);
 }
 
-//Load ASCII Text Font
+//Preload ASCII Text Font into buffer
 void dd_loadTextFont(u8 f)
 {
 	int dummy, i;
