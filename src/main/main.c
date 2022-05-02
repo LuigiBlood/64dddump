@@ -41,6 +41,7 @@ void mainproc(void *arg)
 	dd_setTextPosition(20, 16);
 	dd_printText("64DD Font Test\nI don't like Nintendo 64 development.\n\n");
 
+	//Color Test
 	dd_setTextColor(0,255,0);
 	dd_printText("This ");
 	dd_setTextColor(0,0,255);
@@ -52,25 +53,46 @@ void mainproc(void *arg)
 	dd_setTextColor(0,0,0);
 	dd_printText(" TEST!");
 
+	//Shadow Effect
+	dd_setTextPosition(22, 18);
+	dd_setTextColor(0,0,0);
+	dd_printText("\n\n\n\nThis is only, a test.");
+
 	dd_setTextPosition(20, 16);
 	dd_setTextColor(16,128,255);
 	dd_printText("\n\n\n\nThis is only, a test.");
 
-	/*initController();
+	//Controller Test
+	dd_loadTextFont(2);
+
+	initController();
 
 	while (1)
 	{
 		updateController();
 		if (readControllerHold() != 0)
 		{
-			setcolor(0,255,0);
+			dd_setTextColor(0,255,0);
+			if (i == 1)
+			{
+				dd_clearRect(0, 100, SCREEN_SIZE_X, 117);
+				i = 0;
+				dd_setTextPosition(80, 100);
+				dd_printText("Controller Test");
+			}
 		}
 		else
 		{
-			setcolor(255,0,0);
+			dd_setTextColor(255,0,0);
+			if (i == 0)
+			{
+				dd_clearRect(0, 100, SCREEN_SIZE_X, 117);
+				i = 1;
+				dd_setTextPosition(80, 100);
+				dd_printText("Controller Test");
+			}
 		}
-		draw_puts("\f\n\n\n    TEST");
-	}*/
+	}
 
 	for(;;);
 }
