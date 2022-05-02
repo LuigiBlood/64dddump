@@ -20,18 +20,12 @@ void mainproc(void *arg)
 	int error = 0;
 	char console_text[50];
 	
-	//Initalize Console-type screen
 	osWritebackDCacheAll();
 
 	//Init PI Manager
 	initCartPi();
 
-	//init_draw();
 	dd_initText(4);
-	
-	//Initial Text
-	//setcolor(0,255,0);
-	//draw_puts("\f\n    If you see this for a long period of time,\nsomething has messed up very badly.");
 
 	
 	//Initialize Leo Manager (64DD)
@@ -39,12 +33,7 @@ void mainproc(void *arg)
 	//error = LeoCJCreateLeoManager((OSPri)OS_PRIORITY_LEOMGR-1, (OSPri)OS_PRIORITY_LEOMGR, LeoMessages, NUM_LEO_MESGS);
 	//LeoResetClear();
 	
-	//setbgcolor(15,15,15);
-	//clear_draw();
-	
 	//Render Text
-	//setcolor(255,255,255);
-	//draw_puts("\f\n    64DD Dump Tool 1.0\n    ------------------------------\n");
 	dd_setScreenColor(0,0,50);
 	dd_clearScreen();
 
