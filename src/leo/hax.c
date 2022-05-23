@@ -7,9 +7,8 @@
 #error Compiling this in this state will break hard. Compile it with FINAL=YES instead.
 #endif
 
-#ifdef _LANGUAGE_C_PLUS_PLUS
-extern "C" {
-#endif
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wincompatible-pointer-types"
 
 //Functions
 extern void leoRead();			//Read LBAs
@@ -19,11 +18,6 @@ extern void leoRead_system_area();	//System Area Read
 extern void leoClrUA_MEDIUM_CHANGED();	//Clear Medium Changed Flag
 extern void leoSetUA_MEDIUM_CHANGED();	//Set Medium Changed Flag
 extern u32 LeoDriveExist();	//Read Drive IPL
-
-
-#ifdef _LANGUAGE_C_PLUS_PLUS
-}
-#endif
 
 //Hack libleo functions in real time (and avoid doing all the hax beforehand)
 void haxSystemAreaAccess()
@@ -138,3 +132,5 @@ void haxMediumChangedClear()
 	LeoResetClear();
 	leoClrUA_MEDIUM_CHANGED();
 }
+
+#pragma GCC diagnostic pop
