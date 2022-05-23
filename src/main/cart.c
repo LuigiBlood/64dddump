@@ -8,6 +8,8 @@ OSMesg		dmaMessageBuf[DMA_QUEUE_SIZE];
 
 OSPiHandle *pi_handle;
 
+s32		cart_type;
+
 void initCartPi()
 {
 	//Create PI Message Queue
@@ -16,6 +18,20 @@ void initCartPi()
 	pi_handle = osCartRomInit();
 
 	osCreatePiManager((OSPri)OS_MESG_PRI_NORMAL, &dmaMessageQ, dmaMessageBuf, DMA_QUEUE_SIZE);
+}
+
+void detectCart()
+{
+	//64drive by default for now
+	cart_type = CART_TYPE_64DRIVE;
+}
+
+void unlockCartWrite()
+{
+	if (cart_type == CART_TYPE_64DRIVE)
+	{
+		ciEnableRomWrites();
+	}
 }
 
 //RAM -> Cart

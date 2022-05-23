@@ -37,6 +37,7 @@ SECTIONS
    {
       BUILD_DIR/asm/entry.o(.start);
       BUILD_DIR/src/main*.o(.text);
+      BUILD_DIR/src/process*.o(.text);
       BUILD_DIR/src/ddtextlib*.o(.text);
       BUILD_DIR/src/leo*.o(.text);
 
@@ -46,6 +47,7 @@ SECTIONS
       */libgcc.a:*.o(.text);
       /* data */
       BUILD_DIR/src/main*.o(.data*);
+      BUILD_DIR/src/process*.o(.data*);
       BUILD_DIR/src/ddtextlib*.o(.data*);
       BUILD_DIR/src/leo*.o(.data*);
 
@@ -55,6 +57,7 @@ SECTIONS
 
       /* rodata */
       BUILD_DIR/src/main*.o(.*rodata*);
+      BUILD_DIR/src/process*.o(.*rodata*);
       BUILD_DIR/src/ddtextlib*.o(.*rodata*);
       BUILD_DIR/src/leo*.o(.*rodata*);
 
@@ -67,6 +70,7 @@ SECTIONS
    BEGIN_NOLOAD(code)
    {
       BUILD_DIR/src/main*.o(.*bss*);
+      BUILD_DIR/src/process*.o(.*bss*);
       BUILD_DIR/src/ddtextlib*.o(.*bss*);
       BUILD_DIR/src/leo*.o(.*bss*);
 
