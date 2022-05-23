@@ -14,24 +14,36 @@
 #include	"64drive.h"
 #include	"process.h"
 
+#define PMAIN_SELECT_MIN	0
+#define PMAIN_SELECT_MAX	3
 s32 firstrender;
 s32 drivetype;
-s32 test;
+s32 select;
 
 void pmain_init()
 {
 	firstrender = 0;
-	test = 0;
+	select = 0;
 
 	drivetype = diskGetDriveType();
 }
 
 void pmain_update()
 {
-	if (readControllerHold() != 0)
-		test = 1;
-	else
-		test = 0;
+	if (readControllerPressed() & U_JPAD)
+	{
+		select--;
+		if (select == 1 && drivetype > 0) select--;
+
+		if (select < PMAIN_SELECT_MIN) select = PMAIN_SELECT_MAX;
+	}
+	if (readControllerPressed() & D_JPAD)
+	{
+		select++;
+		if (select == 1) select++;
+
+		if (select > PMAIN_SELECT_MAX) select = PMAIN_SELECT_MIN;
+	}
 }
 
 void pmain_render()
@@ -43,7 +55,7 @@ void pmain_render()
 
 		dd_setTextColor(255,255,255);
 		dd_setTextPosition(20, 16);
-		dd_printText(FALSE, "64DD Dump Tool v0.1\n");
+		dd_printText(FALSE, "64DD Dump Tool v0.1dev\n");
 		
 		switch (drivetype)
 		{
@@ -61,14 +73,28 @@ void pmain_render()
 				break;
 		}
 
+		dd_setTextColor(255,255,255);
+		dd_printText(FALSE, "\nSelect what to dump:");
+
 		firstrender = 1;
 	}
 
-	if (test != 0)
-		dd_setTextColor(0,255,0);
-	else
-		dd_setTextColor(255,0,0);
-
 	dd_setTextPosition(80, 100);
-	dd_printText(TRUE, "Controller Test");
+
+	if (select == 0) dd_setTextColor(0,255,0);
+	else dd_setTextColor(25,25,25);
+	dd_printText(TRUE, "Dump Disk\n");
+
+	if (select == 1) dd_setTextColor(0,255,0);
+	else if (drivetype > 0) dd_setTextColor(128,25,25);
+	else dd_setTextColor(25,25,25);
+	dd_printText(TRUE, "Dump IPL ROM\n");
+
+	if (select == 2) dd_setTextColor(0,255,0);
+	else dd_setTextColor(25,25,25);
+	dd_printText(TRUE, "Dump H8 ROM\n");
+
+	if (select == 3) dd_setTextColor(0,255,0);
+	else dd_setTextColor(25,25,25);
+	dd_printText(TRUE, "Dump EEPROM\n");
 }
