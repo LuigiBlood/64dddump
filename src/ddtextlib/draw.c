@@ -68,7 +68,7 @@ void dd_clearRect(int x1, int y1, int x2, int y2)
 }
 
 //Print single character on screen
-void dd_printChar(char c)
+void dd_printChar(s32 use_bg, char c)
 {
 	int i, j;
 	int code, dx, dy, cy, offset, intensity, width, y_diff;
@@ -114,8 +114,11 @@ void dd_printChar(char c)
 			//Don't bother if there's no intensity (optimization)
 			if (intensity == 0) continue;
 
-			//Use color from frame buffer
-			dc = bitmap_buf[((dd_screen_y + i + y_diff) * SCREEN_SIZE_X) + (dd_screen_x + j)];
+			//Use color from frame buffer or background color
+			if (use_bg == FALSE)
+				dc = bitmap_buf[((dd_screen_y + i + y_diff) * SCREEN_SIZE_X) + (dd_screen_x + j)];
+			else
+				dc = dd_bg_color;
 
 			//Calculate the difference and gradually set intensity
 			dr = getRed(dd_color) - getRed(dc);
@@ -141,9 +144,9 @@ void dd_printChar(char c)
 }
 
 //Print string on screen
-void dd_printText(char *s)
+void dd_printText(s32 use_bg, char *s)
 {
 	dd_screen_x_start = dd_screen_x;
-	while(*s) dd_printChar(*s++);
+	while(*s) dd_printChar(use_bg, *s++);
 	osWritebackDCacheAll();
 }

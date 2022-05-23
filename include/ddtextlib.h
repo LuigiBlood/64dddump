@@ -47,8 +47,8 @@ extern void dd_setScreenColor(u8 r, u8 g, u8 b);
 extern void dd_clearScreen();
 extern void dd_clearRect(int x1, int y1, int x2, int y2);
 
-extern void dd_printChar(char c);
-extern void dd_printText(char *s);
+extern void dd_printChar(s32 use_bg, char c);
+extern void dd_printText(s32 use_bg, char *s);
 
 //util
 extern int getRed(int x);
