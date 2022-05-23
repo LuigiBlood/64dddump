@@ -2,6 +2,22 @@
 #define __ASICDRIVE_H__
 //64DD Definitions
 
+#define SYSTEM_LBAS           24
+
+#define SYS_DATA_LBA1        0        /* LBA for System Data Block */
+#define SYS_DATA_LBA2        1        /* LBA for System Data Block */
+#define SYS_DATA_LBA3        8        /* LBA for System Data Block */
+#define SYS_DATA_LBA4        9        /* LBA for System Data Block */
+#define SYS_LBA_DEV_OFFSET   2        /* Difference between Retail and Development Disks */
+#define SYS_UNCORR_LBA       12       /* Copy Protection */
+
+#define DISK_ID_LBA1         14       /* LBA for Disk ID */
+#define DISK_ID_LBA2         15       /* LBA for Disk ID */
+
+//Max LBA
+#define MAX_P_LBA                  0x10dbUL
+#define MAX_L_LBA                  (MAX_P_LBA - SYSTEM_LBAS)
+
 #define USR_SECS_PER_BLK          85 /* Number of user sectors in a logical block */
 #define C2_SECS_PER_BLK            4 /* Number of C2 sectors in a logical block */
 #define GAP_SECS_PER_BLK           1 /* Number of GAP sectors in a logical block */
