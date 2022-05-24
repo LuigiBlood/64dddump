@@ -19,9 +19,6 @@
 
 void mainproc(void *arg)
 {
-	s32 i, j;
-	char console_text[256];
-	
 	osWritebackDCacheAll();
 
 	initCartPi();
