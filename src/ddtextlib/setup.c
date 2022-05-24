@@ -3,6 +3,8 @@
 #include	"ddtextlib.h"
 #include	"cart.h"
 
+s32 cur_framebuffer;
+
 //Initialize Screen
 void dd_initText(u8 font)
 {
@@ -16,6 +18,7 @@ void dd_initText(u8 font)
 	dd_setTextPosition(0, 0);
 	
 	bitmap_buf = bitmap_buf1;
+	cur_framebuffer = 0;
 	if(mode == SCREEN_LOW)
 	{
 		osViSetMode(&osViModeTable[OS_VI_NTSC_LPF1]);
@@ -36,6 +39,21 @@ void dd_initText(u8 font)
 	}
 	
 	dd_loadTextFont(font);
+}
+
+void dd_swapBuffer()
+{
+	osViSwapBuffer(bitmap_buf);
+	if (cur_framebuffer == 0)
+	{
+		bitmap_buf = bitmap_buf2;
+		cur_framebuffer = 1;
+	}
+	else
+	{
+		bitmap_buf = bitmap_buf1;
+		cur_framebuffer = 0;
+	}
 }
 
 //Preload ASCII Text Font into buffer

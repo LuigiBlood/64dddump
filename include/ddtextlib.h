@@ -35,6 +35,7 @@ extern u8 dd_afont_data[];
 
 //setup
 extern void dd_initText(u8 font);
+extern void dd_swapBuffer();
 extern void dd_loadTextFont(u8 f);
 
 //draw
