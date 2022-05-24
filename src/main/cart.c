@@ -22,8 +22,11 @@ void initCartPi()
 
 void detectCart()
 {
-	//64drive by default for now
-	cart_type = CART_TYPE_64DRIVE;
+	cart_type = CART_TYPE_NONE;
+
+	//64drive detection code
+	if (cartRead(D64_CIBASE_ADDRESS + D64_REGISTER_MAGIC) == D64_MAGIC)
+		cart_type = CART_TYPE_64DRIVE;
 }
 
 void unlockCartWrite()
@@ -60,4 +63,11 @@ void copyFromCartPi(char *src, char *dest, const int len)
 	dmaIoMesgBuf.size = len;
 	osEPiStartDma(pi_handle, &dmaIoMesgBuf, OS_READ);
 	osRecvMesg(&dmaMessageQ, &dummyMesg, OS_MESG_BLOCK);
+}
+
+u32 cartRead(u32 addr)
+{
+	u32 data;
+	osEPiReadIo(pi_handle, addr, &data);
+	return data;
 }

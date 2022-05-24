@@ -9,11 +9,14 @@
 
 extern OSMesgQueue dmaMessageQ;
 extern OSPiHandle *pi_handle;
+extern s32 cart_type;
+#define cartGetType()	(cart_type)
 
 extern void initCartPi();
 extern void detectCart();
 extern void unlockCartWrite();
 extern void copyToCartPi(char *src, char *dest, const int len);
 extern void copyFromCartPi(char *src, char *dest, const int len);
+extern u32 cartRead(u32 addr);
 
 #endif /* __CART_H__ */
