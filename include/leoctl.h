@@ -15,6 +15,11 @@ extern u8			blockData[];
 extern u8			errorData[];
 extern LEODiskID	_diskId;
 
+#define LEO_DRIVE_TYPE_NONE   -1
+#define LEO_DRIVE_TYPE_RETAIL 0
+#define LEO_DRIVE_TYPE_DEV    1
+#define LEO_DRIVE_TYPE_WRITER 2
+
 //libleo
 extern int leoWait_mecha_cmd_done();
 

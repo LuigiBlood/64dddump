@@ -81,19 +81,19 @@ s32 diskGetDriveType()
 	LEOVersion _leover;
 
 	if (!isRegisterPresent())
-		return -1; //NO DRIVE
+		return LEO_DRIVE_TYPE_NONE; //NO DRIVE
 	
 	//Get ASIC Version
 	u32 asicver = diskDoCommand(0x000A0000, 0);
 	if (asicver & 0xF0000000 == 0x70000000)
-		return 2; //WRITER DRIVE
+		return LEO_DRIVE_TYPE_WRITER; //WRITER DRIVE
 	
 	//Get Drive Version
 	LeoInquiry(&_leover);
 	if ((_leover.drive & 0x0F) == 0x04)
-		return 1; //DEVELOPMENT DRIVE
+		return LEO_DRIVE_TYPE_DEV; //DEVELOPMENT DRIVE
 	else
-		return 0; //RETAIL DRIVE
+		return LEO_DRIVE_TYPE_RETAIL; //RETAIL DRIVE
 }
 
 u32 diskGetIPLType()
