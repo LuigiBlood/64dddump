@@ -6,7 +6,7 @@
 #include	"cart.h"
 
 /* Disk */
-u8	blockData[USR_SECS_PER_BLK*SEC_SIZE_ZONE0];
+u8	blockData[USR_SECS_PER_BLK*SEC_SIZE_ZONE0];	//0x4D08
 u8	errorData[MAX_P_LBA];
 LEODiskID	_diskId;
 
@@ -38,6 +38,8 @@ s32 diskCheck()
 	/* Check Disk System Info, do diskReadID first, if not working, do manual work here */
 	s32 error;
 	error = diskReadID();
+
+	//TODO: Actual checks
 }
 
 /* IPL ROM */
@@ -52,6 +54,18 @@ void iplCopy(char *src, char *dest, const int len)
 	dmaIoMesgBuf.size = len;
 	osEPiStartDma(DriveRomHandle, &dmaIoMesgBuf, OS_READ);
 	osRecvMesg(&dmaMessageQ, &dummyMesg, OS_MESG_BLOCK);
+}
+
+void iplBlockRead(s32 addr)
+{
+	iplCopy((char*)addr, blockData, 0x4000);
+}
+
+u32 iplRead(s32 addr)
+{
+	u32 data;
+	osEPiReadIo(DriveRomHandle, addr, &data);
+	return data;
 }
 
 /* H8 Drive Control ROM */

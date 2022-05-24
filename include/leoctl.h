@@ -20,6 +20,9 @@ extern LEODiskID	_diskId;
 #define LEO_DRIVE_TYPE_DEV    1
 #define LEO_DRIVE_TYPE_WRITER 2
 
+#define LEO_IPL_TYPE_JP  0xC3
+#define LEO_IPL_TYPE_US  0x04
+
 //libleo
 extern int leoWait_mecha_cmd_done();
 
@@ -34,6 +37,8 @@ extern s32 diskReadID();
 extern s32 diskCheck();
 //-ipl
 extern void iplCopy(char *src, char *dest, const int len);
+extern void iplBlockRead(s32 addr);
+extern u32 iplRead(s32 addr);
 //-h8
 extern u8 h8Read(u16 addr);
 extern void h8BlockRead(s32 addr);

@@ -98,10 +98,7 @@ s32 diskGetDriveType()
 
 u32 diskGetIPLType()
 {
-	u32 data;
-	osEPiReadIo(DriveRomHandle, 0xA609FF00, &data);
-	data = data >> 24;
-	return data;
+	return iplRead(0x9FF00) >> 24;
 }
 
 s32 isRegisterPresent()
@@ -111,7 +108,5 @@ s32 isRegisterPresent()
 
 s32 isIPLROMPresent()
 {
-	u32 data;
-	osEPiReadIo(DriveRomHandle, 0xA6001010, &data);
-	return data == 0x2129FFF8;
+	return iplRead(0x1010) == 0x2129FFF8;
 }

@@ -17,6 +17,7 @@ extern u32	__leoActive;		//Is Leo Manager Active?
 
 #define haxSystemAreaReadSet()			(LEOdrive_flag = 0xff)
 #define haxSystemAreaReadClr()			(LEOdrive_flag = 0)
+#define haxSetCountryCode(x)			(LEO_country_code = x)
 
 //Hacking
 void haxReadErrorRetry(u16 retries);
