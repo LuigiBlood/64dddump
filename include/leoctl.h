@@ -49,5 +49,7 @@ extern s32 isDiskPresent();
 extern s32 isDiskChanged();
 extern s32 diskGetDriveType();
 extern u32 diskGetIPLType();
+extern s32 isRegisterPresent();
+extern s32 isIPLROMPresent();
 
 #endif

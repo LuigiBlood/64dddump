@@ -79,6 +79,9 @@ s32 isDiskChanged()
 s32 diskGetDriveType()
 {
 	LEOVersion _leover;
+
+	if (!isRegisterPresent())
+		return -1; //NO DRIVE
 	
 	//Get ASIC Version
 	u32 asicver = diskDoCommand(0x000A0000, 0);
@@ -95,8 +98,20 @@ s32 diskGetDriveType()
 
 u32 diskGetIPLType()
 {
-	u32 data = 0;
+	u32 data;
 	osEPiReadIo(DriveRomHandle, 0xA609FF00, &data);
 	data = data >> 24;
 	return data;
+}
+
+s32 isRegisterPresent()
+{
+	return (diskReadRegister(ASIC_STATUS) & 0xFFFF) == 0;
+}
+
+s32 isIPLROMPresent()
+{
+	u32 data;
+	osEPiReadIo(DriveRomHandle, 0xA6001010, &data);
+	return data == 0x2129FFF8;
 }
