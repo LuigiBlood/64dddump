@@ -16,14 +16,12 @@
 
 #define PMAIN_SELECT_MIN	0
 #define PMAIN_SELECT_MAX	3
-s32 firstrender;
 s32 drivetype;
 s32 select;
 s32 iplrompresent;
 
 void pmain_init()
 {
-	firstrender = 0;
 	select = 0;
 
 	drivetype = diskGetDriveType();
@@ -53,11 +51,15 @@ void pmain_update()
 	if (drivetype == LEO_DRIVE_TYPE_NONE && !iplrompresent) select = 1;
 
 	//Interaction
+	if (readControllerPressed() & A_BUTTON)
+	{
+		process_change(PROCMODE_PIPL);
+	}
 }
 
-void pmain_render()
+void pmain_render(s32 fullrender)
 {
-	if (!firstrender)
+	if (fullrender)
 	{
 		dd_setScreenColor(0,10,10);
 		dd_clearScreen();
@@ -99,7 +101,19 @@ void pmain_render()
 			dd_printText(TRUE, "Please power off the Nintendo 64\nand insert a 64DD Disk Drive\nor an IPL ROM Cartridge.");
 		}
 
-		firstrender = 1;
+		switch (cartGetType())
+		{
+			case CART_TYPE_64DRIVE:
+				dd_setTextPosition(20, 210);
+				dd_setTextColor(255,255,255);
+				dd_printText(FALSE, "64drive detected.");
+				break;
+			default:
+				dd_setTextPosition(20, 210);
+				dd_setTextColor(255,255,255);
+				dd_printText(FALSE, "Unknown cartridge");
+				break;
+		}
 	}
 
 	if (drivetype >= LEO_DRIVE_TYPE_RETAIL || iplrompresent)

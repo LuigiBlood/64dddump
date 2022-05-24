@@ -19,6 +19,7 @@
 
 void mainproc(void *arg)
 {
+	s32 frame = 0;
 	osWritebackDCacheAll();
 
 	initCartPi();
@@ -29,13 +30,18 @@ void mainproc(void *arg)
 	initDisk();
 	initController();
 
-	process_init(0);
+	process_first(0);
 
 	while (1)
 	{
 		updateController();
+
+		if (process_check()) frame = -1;
 		process_update();
-		process_render();
+		process_render(frame < 2);
+		dd_swapBuffer();
+
+		if (frame < 2) frame++;
 	}
 
 	for(;;);
