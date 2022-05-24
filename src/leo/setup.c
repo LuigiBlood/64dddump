@@ -29,7 +29,8 @@ s32 initDisk()
 	error = LeoCJCreateLeoManager((OSPri)OS_PRIORITY_LEOMGR-1, (OSPri)OS_PRIORITY_LEOMGR, LeoMessages, NUM_LEO_MESGS);
 	LeoResetClear();
 
-	unlockDisk();
+	if (isRegisterPresent())
+		unlockDisk();
 
 	return error;
 }
