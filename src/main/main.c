@@ -17,6 +17,9 @@
 #include	"64drive.h"
 #include	"process.h"
 
+extern OSMesgQueue	retraceMessageQ;
+extern OSMesg		retraceMessageBuf;
+
 void mainproc(void *arg)
 {
 	s32 frame = 0;
@@ -34,14 +37,21 @@ void mainproc(void *arg)
 
 	while (1)
 	{
-		updateController();
+		if (frame == 0)
+		{
+			updateController();
 
-		if (process_check()) frame = -1;
-		process_update();
-		process_render(frame < 2);
-		dd_swapBuffer();
+			process_check();
+			process_update();
+		}
+		else
+		{
+			process_render(1);
+			dd_swapBuffer();
+		}
 
-		if (frame < 2) frame++;
+		osRecvMesg(&retraceMessageQ,NULL,OS_MESG_BLOCK);
+		frame ^= 1;
 	}
 
 	for(;;);
