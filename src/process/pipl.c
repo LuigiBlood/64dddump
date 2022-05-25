@@ -15,8 +15,9 @@
 #include	"process.h"
 
 #define PIPL_MODE_INIT		0
-#define PIPL_MODE_DUMP		1
-#define PIPL_MODE_FINISH	2
+#define PIPL_MODE_CONFIRM	1
+#define PIPL_MODE_DUMP		2
+#define PIPL_MODE_FINISH	8
 
 #define PIPL_SIZE		0x400000
 #define PIPL_BLOCK_SIZE	0x4000
@@ -33,7 +34,18 @@ void pipl_update()
 {
 	if (pipl_dump_mode == PIPL_MODE_INIT)
 	{
-		pipl_dump_mode = PIPL_MODE_DUMP;
+		pipl_dump_mode = PIPL_MODE_CONFIRM;
+	}
+	else if (pipl_dump_mode == PIPL_MODE_CONFIRM)
+	{
+		if (readControllerPressed() & B_BUTTON)
+		{
+			process_change(PROCMODE_PMAIN);
+		}
+		if (readControllerPressed() & A_BUTTON)
+		{
+			pipl_dump_mode = PIPL_MODE_DUMP;
+		}
 	}
 	else if (pipl_dump_mode == PIPL_MODE_DUMP)
 	{
@@ -72,7 +84,25 @@ void pipl_render(s32 fullrender)
 		dd_setTextColor(255,255,0);
 		dd_printText(FALSE, "Dump IPL ROM Mode\n");
 
-		if (pipl_dump_mode == PIPL_MODE_DUMP)
+		if (pipl_dump_mode == PIPL_MODE_CONFIRM)
+		{
+			dd_setTextPosition(20, 16*7);
+			dd_setTextColor(255,255,255);
+			dd_printText(FALSE, "Press ");
+			dd_setTextColor(25,25,255);
+			dd_printText(FALSE, "A Button");
+			dd_setTextColor(255,255,255);
+			dd_printText(FALSE, " to confirm dump.");
+
+			dd_setTextPosition(20, 16*8);
+			dd_setTextColor(255,255,255);
+			dd_printText(FALSE, "Press ");
+			dd_setTextColor(25,255,25);
+			dd_printText(FALSE, "B Button");
+			dd_setTextColor(255,255,255);
+			dd_printText(FALSE, " to return to menu.");
+		}
+		else if (pipl_dump_mode == PIPL_MODE_DUMP)
 		{
 			dd_setTextColor(255,255,255);
 			dd_setTextPosition(20, 16*4);
@@ -85,7 +115,15 @@ void pipl_render(s32 fullrender)
 			dd_setTextPosition(20, 16*4);
 			sprintf(console_text, "%X/%X bytes\n", pipl_dump_offset, PIPL_SIZE);
 			dd_printText(FALSE, console_text);
-			dd_printText(FALSE, "IPL ROM Dumped\n\nPress the A Button\nto go back to the main menu.");
+			dd_printText(FALSE, "IPL ROM Dumped.");
+
+			dd_setTextPosition(20, 16*8);
+			dd_setTextColor(255,255,255);
+			dd_printText(FALSE, "Press ");
+			dd_setTextColor(25,25,255);
+			dd_printText(FALSE, "A Button");
+			dd_setTextColor(255,255,255);
+			dd_printText(FALSE, " to return to menu.");
 		}
 	}
 }
