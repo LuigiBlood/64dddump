@@ -6,7 +6,7 @@
 #include	"cart.h"
 
 /* Disk */
-u8	blockData[USR_SECS_PER_BLK*SEC_SIZE_ZONE0];	//0x4D08
+u8	blockData[USR_SECS_PER_BLK*SEC_SIZE_ZONE0] __attribute__ ((aligned (8)));	//0x4D08
 u8	errorData[MAX_P_LBA];
 LEODiskID	_diskId;
 
