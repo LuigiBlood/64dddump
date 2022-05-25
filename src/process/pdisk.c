@@ -24,6 +24,25 @@ s32 pdisk_dump_mode;
 s32 pdisk_cur_lba;
 s32 pdisk_drivetype;
 
+void pdisk_f_progress(float percent)
+{
+	char console_text[256];
+	s32 temp = 220*percent;
+
+	dd_setScreenColor(255,255,255);
+	dd_clearRect(50-1, (16*12)-1, 50+220+1, (16*13)+1);
+	dd_setScreenColor(10,10,0);
+	dd_clearRect(50, (16*12), 50+220, (16*13));
+	dd_setScreenColor(0,255,255);
+	dd_clearRect(50, (16*12), 50 + temp, (16*13));
+
+	sprintf(console_text, "%i", (s32)ceilf(percent*100));
+	dd_setTextPosition(150, (16*12)-3);
+	dd_setTextColor(255,80,0);
+	dd_printText(FALSE, console_text);
+	dd_printChar(FALSE, '%');
+}
+
 void pdisk_init()
 {
 	pdisk_cur_lba = 0;
