@@ -89,8 +89,8 @@ void h8BlockRead(s32 addr)
 /* EEPROM */
 u8 eepromRead(u8 addr)
 {
-	//FIX: Only works with retail
-	return (diskDoCommand(0x001C0000, addr << 24) >> 16) & 0xFF;
+	//0x1C (Retail) and 0x44 (Retail & Dev)
+	return (diskDoCommand(0x00440000, addr << 24) >> 16) & 0xFF;
 }
 
 void eepromBlockRead()
