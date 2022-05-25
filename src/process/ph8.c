@@ -39,6 +39,7 @@ void ph8_update()
 	else if (ph8_dump_mode == PH8_MODE_DUMP)
 	{
 		h8BlockRead(PH8_BASE + ph8_dump_offset);
+		osWritebackDCacheAll();
 		copyToCartPi(blockData, (char*)ph8_dump_offset, PH8_BLOCK_SIZE);
 		ph8_dump_offset += PH8_BLOCK_SIZE;
 		if (ph8_dump_offset >= PH8_SIZE)

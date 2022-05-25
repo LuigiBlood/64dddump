@@ -38,6 +38,7 @@ void pipl_update()
 	else if (pipl_dump_mode == PIPL_MODE_DUMP)
 	{
 		iplBlockRead(pipl_dump_offset);
+		osWritebackDCacheAll();
 		copyToCartPi(blockData, (char*)pipl_dump_offset, PIPL_BLOCK_SIZE);
 		pipl_dump_offset += PIPL_BLOCK_SIZE;
 		if (pipl_dump_offset >= PIPL_SIZE)

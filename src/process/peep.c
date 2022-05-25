@@ -37,6 +37,7 @@ void peep_update()
 	else if (peep_dump_mode == PEEP_MODE_DUMP)
 	{
 		eepromBlockRead();
+		osWritebackDCacheAll();
 		copyToCartPi(blockData, (char*)peep_dump_offset, PEEP_SIZE);
 		peep_dump_offset += PEEP_SIZE;
 		if (peep_dump_offset >= PEEP_SIZE)
