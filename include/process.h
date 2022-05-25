@@ -25,6 +25,11 @@ extern void pmain_init();
 extern void pmain_update();
 extern void pmain_render(s32 fullrender);
 
+//pdisk
+extern void pdisk_init();
+extern void pdisk_update();
+extern void pdisk_render(s32 fullrender);
+
 //pipl
 extern void pipl_init();
 extern void pipl_update();

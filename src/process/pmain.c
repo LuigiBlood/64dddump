@@ -22,7 +22,7 @@ s32 iplrompresent;
 
 void pmain_init()
 {
-	select = 0;
+	//select = 0;
 
 	drivetype = diskGetDriveType();
 	iplrompresent = isIPLROMPresent();
@@ -53,8 +53,7 @@ void pmain_update()
 	//Interaction
 	if (readControllerPressed() & A_BUTTON)
 	{
-		if (select != 0)
-			process_change(select + 1);
+		process_change(select + PROCMODE_PDISK);
 	}
 }
 

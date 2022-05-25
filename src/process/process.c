@@ -51,6 +51,9 @@ void process_init(s32 mode)
 		case PROCMODE_PMAIN:
 			pmain_init();
 			break;
+		case PROCMODE_PDISK:
+			pdisk_init();
+			break;
 		case PROCMODE_PIPL:
 			pipl_init();
 			break;
@@ -71,6 +74,9 @@ void process_update()
 		case PROCMODE_PMAIN:
 			pmain_update();
 			break;
+		case PROCMODE_PDISK:
+			pdisk_update();
+			break;
 		case PROCMODE_PIPL:
 			pipl_update();
 			break;
@@ -90,6 +96,9 @@ void process_render(s32 fullrender)
 	{
 		case PROCMODE_PMAIN:
 			pmain_render(fullrender);
+			break;
+		case PROCMODE_PDISK:
+			pdisk_render(fullrender);
 			break;
 		case PROCMODE_PIPL:
 			pipl_render(fullrender);
