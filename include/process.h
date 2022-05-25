@@ -9,6 +9,7 @@
 #define PROCMODE_PIPL	2
 #define PROCMODE_PH8	3
 #define PROCMODE_PEEP	4
+#define PROCMODE_PCONF	5
 
 //Main Process
 extern void process_first(s32 mode);
@@ -28,5 +29,10 @@ extern void pmain_render(s32 fullrender);
 extern void pipl_init();
 extern void pipl_update();
 extern void pipl_render(s32 fullrender);
+
+//ph8
+extern void ph8_init();
+extern void ph8_update();
+extern void ph8_render(s32 fullrender);
 
 #endif

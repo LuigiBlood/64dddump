@@ -53,7 +53,8 @@ void pmain_update()
 	//Interaction
 	if (readControllerPressed() & A_BUTTON)
 	{
-		process_change(PROCMODE_PIPL);
+		if (select == 1 || select == 2)
+			process_change(select + 1);
 	}
 }
 
