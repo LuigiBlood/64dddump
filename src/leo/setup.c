@@ -13,7 +13,7 @@ OSMesg	diskMsgBuf[DISK_MSG_NUM];
 OSPiHandle *LeoDiskHandle;
 OSPiHandle *DriveRomHandle;
 
-u8 isUnlocked = 0;
+u8 isUnlocked;
 
 /* Initialize Disk Related Functionality and Library */
 s32 initDisk()
@@ -29,6 +29,7 @@ s32 initDisk()
 	error = LeoCJCreateLeoManager((OSPri)OS_PRIORITY_LEOMGR-1, (OSPri)OS_PRIORITY_LEOMGR, LeoMessages, NUM_LEO_MESGS);
 	LeoResetClear();
 
+	isUnlocked = 0;
 	if (isRegisterPresent())
 		unlockDisk();
 
