@@ -53,7 +53,7 @@ void pmain_update()
 	//Interaction
 	if (readControllerPressed() & A_BUTTON)
 	{
-		if (select == 1 || select == 2)
+		if (select != 0)
 			process_change(select + 1);
 	}
 }
@@ -99,7 +99,7 @@ void pmain_render(s32 fullrender)
 			dd_setTextPosition(40, 100);
 
 			dd_setTextColor(255,255,255);
-			dd_printText(TRUE, "Please power off the Nintendo 64\nand insert a 64DD Disk Drive\nor an IPL ROM Cartridge.");
+			dd_printText(TRUE, "Please power off the Nintendo 64\nand insert a 64DD Disk Drive\nor/and an IPL ROM Cartridge.");
 		}
 
 		switch (cartGetType())

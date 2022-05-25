@@ -35,4 +35,9 @@ extern void ph8_init();
 extern void ph8_update();
 extern void ph8_render(s32 fullrender);
 
+//peep
+extern void peep_init();
+extern void peep_update();
+extern void peep_render(s32 fullrender);
+
 #endif

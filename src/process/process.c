@@ -57,6 +57,9 @@ void process_init(s32 mode)
 		case PROCMODE_PH8:
 			ph8_init();
 			break;
+		case PROCMODE_PEEP:
+			peep_init();
+			break;
 	}
 }
 
@@ -74,6 +77,9 @@ void process_update()
 		case PROCMODE_PH8:
 			ph8_update();
 			break;
+		case PROCMODE_PEEP:
+			peep_update();
+			break;
 	}
 }
 
@@ -90,6 +96,9 @@ void process_render(s32 fullrender)
 			break;
 		case PROCMODE_PH8:
 			ph8_render(fullrender);
+			break;
+		case PROCMODE_PEEP:
+			peep_render(fullrender);
 			break;
 	}
 }
