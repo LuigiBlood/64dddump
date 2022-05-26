@@ -17,12 +17,17 @@
 #define PDISK_MODE_INIT		0
 #define PDISK_MODE_WAIT		1
 #define PDISK_MODE_CHECK	2
-#define PDISK_MODE_CONF		3
+#define PDISK_MODE_CONF1	3
+#define PDISK_MODE_CONF2	4
 #define PDISK_MODE_DUMP		7
 #define PDISK_MODE_FINISH	8
 s32 pdisk_dump_mode;
 s32 pdisk_cur_lba;
 s32 pdisk_drivetype;
+
+#define PDISK_SELECT2_MIN	0
+#define PDISK_SELECT2_MAX	2
+s32 pdisk_select;
 
 void pdisk_f_progress(float percent)
 {
@@ -48,6 +53,7 @@ void pdisk_init()
 	pdisk_cur_lba = 0;
 	pdisk_drivetype = diskGetDriveType();
 	pdisk_dump_mode = PDISK_MODE_INIT;
+	pdisk_select = 0;
 }
 
 void pdisk_update()
@@ -73,14 +79,50 @@ void pdisk_update()
 
 		if (diskReadID() == LEO_STATUS_GOOD)
 		{
-			pdisk_dump_mode = PDISK_MODE_CONF;
+			pdisk_dump_mode = PDISK_MODE_CONF1;
 		}
 	}
-	else if (pdisk_dump_mode == PDISK_MODE_CONF)
+	else if (pdisk_dump_mode == PDISK_MODE_CONF1)
 	{
 		//Check for Disk presence
 		if (!isDiskPresent()) pdisk_dump_mode = PDISK_MODE_WAIT;
 
+		if (readControllerPressed() & A_BUTTON)
+		{
+			pdisk_dump_mode = PDISK_MODE_CONF2;
+			pdisk_select = 0;
+			if (pdisk_drivetype != LEO_DRIVE_TYPE_RETAIL) pdisk_select = 1;
+		}
+		if (readControllerPressed() & B_BUTTON)
+		{
+			process_change(PROCMODE_PMAIN);
+		}
+	}
+	else if (pdisk_dump_mode == PDISK_MODE_CONF2)
+	{
+		//Check for Disk presence
+		if (!isDiskPresent()) pdisk_dump_mode = PDISK_MODE_WAIT;
+
+		//Selection
+		if (readControllerPressed() & U_JPAD)
+		{
+			pdisk_select--;
+			if (pdisk_select == 0 && pdisk_drivetype != LEO_DRIVE_TYPE_RETAIL) pdisk_select--;
+		}
+		if (readControllerPressed() & D_JPAD)
+		{
+			pdisk_select++;
+			if (pdisk_select > PDISK_SELECT2_MAX) pdisk_select = PDISK_SELECT2_MIN;
+			if (pdisk_select == 0 && pdisk_drivetype != LEO_DRIVE_TYPE_RETAIL) pdisk_select++;
+		}
+
+		if (pdisk_select < PDISK_SELECT2_MIN) pdisk_select = PDISK_SELECT2_MAX;
+		if (pdisk_select > PDISK_SELECT2_MAX) pdisk_select = PDISK_SELECT2_MIN;
+
+		if (readControllerPressed() & A_BUTTON)
+		{
+			pdisk_dump_mode = PDISK_MODE_CONF1;
+		}
 		if (readControllerPressed() & B_BUTTON)
 		{
 			process_change(PROCMODE_PMAIN);
@@ -143,7 +185,7 @@ void pdisk_render(s32 fullrender)
 			dd_setTextPosition(20, 16*4);
 			dd_printText(FALSE, "Checking the disk...\n");
 		}
-		else if (pdisk_dump_mode == PDISK_MODE_CONF)
+		else if (pdisk_dump_mode == PDISK_MODE_CONF1)
 		{
 			dd_setTextColor(255,255,255);
 			dd_setTextPosition(20, 16*4);
@@ -153,8 +195,16 @@ void pdisk_render(s32 fullrender)
 				_diskId.serialNumber.time.month, _diskId.serialNumber.time.day,
 				_diskId.serialNumber.time.hour, _diskId.serialNumber.time.minute, _diskId.serialNumber.time.second);
 			dd_printText(FALSE, console_text);
+			if (*((u32*)&LEO_sys_data[0]) == LEO_COUNTRY_JPN)
+				dd_printText(FALSE, "Disk Region: Japan\n");
+			else if (*((u32*)&LEO_sys_data[0]) == LEO_COUNTRY_USA)
+				dd_printText(FALSE, "Disk Region: USA\n");
+			else if (*((u32*)&LEO_sys_data[0]) == LEO_COUNTRY_NONE)
+				dd_printText(FALSE, "Disk Region: None\n");
+			else
+				dd_printText(FALSE, "Disk Region: Unknown\n");
 
-			dd_setTextPosition(20, 16*7);
+			dd_setTextPosition(20, 16*8);
 			dd_setTextColor(255,255,255);
 			dd_printText(FALSE, "Press ");
 			dd_setTextColor(25,25,255);
@@ -162,13 +212,40 @@ void pdisk_render(s32 fullrender)
 			dd_setTextColor(255,255,255);
 			dd_printText(FALSE, " to continue...");
 
-			dd_setTextPosition(20, 16*8);
+			dd_setTextPosition(20, 16*9);
 			dd_setTextColor(255,255,255);
 			dd_printText(FALSE, "Press ");
 			dd_setTextColor(25,255,25);
 			dd_printText(FALSE, "B Button");
 			dd_setTextColor(255,255,255);
 			dd_printText(FALSE, " to return to menu.");
+		}
+		else if (pdisk_dump_mode == PDISK_MODE_CONF2)
+		{
+			dd_setTextColor(255,255,255);
+			dd_setTextPosition(20, 16*4);
+			dd_printText(TRUE, "Select Dump Mode:");
+
+			dd_setTextPosition(60, 16*5);
+
+			if (pdisk_select == 0) dd_setTextColor(0,255,0);
+			else if (pdisk_drivetype != LEO_DRIVE_TYPE_RETAIL) dd_setTextColor(128,25,25);
+			else dd_setTextColor(25,25,25);
+			dd_printText(TRUE, "Dump with Skips (Retail Only)\n");
+
+			if (pdisk_select == 1) dd_setTextColor(0,255,0);
+			else dd_setTextColor(25,25,25);
+			dd_printText(TRUE, "Dump Entire Disk\n");
+
+			if (pdisk_select == 2) dd_setTextColor(0,255,0);
+			else dd_setTextColor(25,25,25);
+			dd_printText(TRUE, "Dump Entire Disk Faster\n");
+
+			dd_setTextColor(255,255,255);
+			dd_setTextPosition(20, 16*11);
+			if (pdisk_select == 0) dd_printText(TRUE, "Dumps the retail disk, then\ntries to dump unformatted segments,\nif it fails, skips the segment.");
+			else if (pdisk_select == 1) dd_printText(TRUE, "\nDumps the entire disk data and\nbruteforces through bad blocks.");
+			else if (pdisk_select == 2) dd_printText(TRUE, "Dumps the entire disk data and\nbruteforces through bad blocks,\nallows to lower redundant error reads.");
 		}
 	}
 }
