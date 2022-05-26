@@ -1,6 +1,3 @@
-//64DD Dump 1.0
-//Based on pfs SDK demo
-
 #include	<ultra64.h>
 #include	<PR/leo.h>
 #include	<nustd/math.h>

@@ -13,6 +13,7 @@
 #include	"leoctl.h"
 #include	"64drive.h"
 #include	"process.h"
+#include	"version.h"
 
 #define PMAIN_SELECT_MIN	0
 #define PMAIN_SELECT_MAX	3
@@ -66,7 +67,7 @@ void pmain_render(s32 fullrender)
 
 		dd_setTextColor(255,255,255);
 		dd_setTextPosition(20, 16);
-		dd_printText(FALSE, "64DD Dump Tool v0.1dev\n");
+		dd_printText(FALSE, SW_NAMESTRING);
 		
 		switch (drivetype)
 		{

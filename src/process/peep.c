@@ -13,6 +13,7 @@
 #include	"leoctl.h"
 #include	"64drive.h"
 #include	"process.h"
+#include	"version.h"
 
 #define PEEP_MODE_INIT		0
 #define PEEP_MODE_CONFIRM	1
@@ -97,7 +98,7 @@ void peep_render(s32 fullrender)
 
 		dd_setTextColor(255,255,255);
 		dd_setTextPosition(20, 16);
-		dd_printText(FALSE, "64DD Dump Tool v0.1dev\n");
+		dd_printText(FALSE, SW_NAMESTRING);
 
 		dd_setTextColor(30,30,255);
 		dd_printText(FALSE, "Dump EEPROM Mode\n");
