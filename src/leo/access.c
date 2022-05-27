@@ -25,8 +25,13 @@ s32 diskReadLBA(s32 lba)
 s32 diskSkipLBA(s32 lba)
 {
 	/* Skip LBA and keep sense info from libleo */
-	errorData[lba] = LEO_SENSE_SKIPPED_LBA;
-	return LEO_SENSE_SKIPPED_LBA;
+	s32 error;
+	error = LEO_SENSE_SKIPPED_LBA;
+	if (!isDiskPresent()) error = LEO_SENSE_MEDIUM_NOT_PRESENT;
+	if (isDiskChanged()) error = LEO_SENSE_MEDIUM_MAY_HAVE_CHANGED;
+
+	errorData[lba] = (u8)error;
+	return error;
 }
 
 s32 diskReadID()
