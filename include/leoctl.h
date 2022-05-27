@@ -23,6 +23,9 @@ extern LEODiskID	_diskId;
 #define LEO_IPL_TYPE_JP  0xC3
 #define LEO_IPL_TYPE_US  0x04
 
+#define LEO_SENSE_GOOD			0
+#define LEO_SENSE_SKIPPED_LBA	99
+
 //libleo
 extern int leoWait_mecha_cmd_done();
 
@@ -33,6 +36,7 @@ extern void unlockDisk();
 //access
 //-disk
 extern s32 diskReadLBA(s32 lba);
+extern s32 diskSkipLBA(s32 lba);
 extern s32 diskReadID();
 extern s32 diskCheck();
 //-ipl

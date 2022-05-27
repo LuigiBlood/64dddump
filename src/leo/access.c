@@ -22,6 +22,13 @@ s32 diskReadLBA(s32 lba)
 	return error;
 }
 
+s32 diskSkipLBA(s32 lba)
+{
+	/* Skip LBA and keep sense info from libleo */
+	errorData[lba] = LEO_SENSE_SKIPPED_LBA;
+	return LEO_SENSE_SKIPPED_LBA;
+}
+
 s32 diskReadID()
 {
 	/* This automates certain disk checks on libleo's side */
