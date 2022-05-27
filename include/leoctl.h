@@ -62,4 +62,7 @@ extern u32 diskGetIPLType();
 extern s32 isRegisterPresent();
 extern s32 isIPLROMPresent();
 
+//string
+extern char* diskErrorString(s32 error);
+
 #endif
