@@ -22,7 +22,8 @@
 #define PDISK_MODE_CONF1	3
 #define PDISK_MODE_CONF2	4
 #define PDISK_MODE_DUMP		7
-#define PDISK_MODE_FINISH	8
+#define PDISK_MODE_FATAL	8
+#define PDISK_MODE_FINISH	10
 s32 pdisk_dump_mode;
 
 #define PDISK_SELECT2_MIN	0
@@ -34,6 +35,7 @@ s32 pdisk_cur_lba;
 s32 pdisk_drivetype;
 s32 pdisk_dump_pause;
 s32 pdisk_error_count;
+s32 pdisk_error_fatal;
 
 void pdisk_f_progress(float percent)
 {
@@ -71,9 +73,12 @@ void pdisk_update()
 	}
 	else if (pdisk_dump_mode == PDISK_MODE_WAIT)
 	{
-		//Check for Disk presence
+		//Mode: Wait for Disk inserted in the drive.
+
+		//Check for Disk presence, reset when disk is ejected
 		if (isDiskPresent()) pdisk_dump_mode = PDISK_MODE_CHECK;
 
+		//Press B Button to quit
 		if (readControllerPressed() & B_BUTTON)
 		{
 			process_change(PROCMODE_PMAIN);
@@ -81,9 +86,13 @@ void pdisk_update()
 	}
 	else if (pdisk_dump_mode == PDISK_MODE_CHECK)
 	{
-		//Check for Disk presence
+		//Mode: Checking the Disk Info
+
+		//Check for Disk presence, reset when disk is ejected
 		if (!isDiskPresent()) pdisk_dump_mode = PDISK_MODE_WAIT;
 
+		//Read Disk ID would do a bunch of checks on top
+		//TODO: What to do when this fails
 		if (diskReadID() == LEO_STATUS_GOOD)
 		{
 			pdisk_dump_mode = PDISK_MODE_CONF1;
@@ -91,15 +100,19 @@ void pdisk_update()
 	}
 	else if (pdisk_dump_mode == PDISK_MODE_CONF1)
 	{
-		//Check for Disk presence
+		//Mode: Show Disk Info
+
+		//Check for Disk presence, reset when disk is ejected
 		if (!isDiskPresent()) pdisk_dump_mode = PDISK_MODE_WAIT;
 
+		//Press A Button to continue
 		if (readControllerPressed() & A_BUTTON)
 		{
 			pdisk_dump_mode = PDISK_MODE_CONF2;
 			pdisk_select = 0;
 			if (pdisk_drivetype != LEO_DRIVE_TYPE_RETAIL) pdisk_select = 1;
 		}
+		//Press B Button to quit
 		if (readControllerPressed() & B_BUTTON)
 		{
 			process_change(PROCMODE_PMAIN);
@@ -107,7 +120,9 @@ void pdisk_update()
 	}
 	else if (pdisk_dump_mode == PDISK_MODE_CONF2)
 	{
-		//Check for Disk presence
+		//Mode: Menu for Dump Type (Skip, Full, Full Fast)
+
+		//Check for Disk presence, reset when disk is ejected
 		if (!isDiskPresent()) pdisk_dump_mode = PDISK_MODE_WAIT;
 
 		//Selection
@@ -126,6 +141,7 @@ void pdisk_update()
 		if (pdisk_select < PDISK_SELECT2_MIN) pdisk_select = PDISK_SELECT2_MAX;
 		if (pdisk_select > PDISK_SELECT2_MAX) pdisk_select = PDISK_SELECT2_MIN;
 
+		//Press A Button to start dump
 		if (readControllerPressed() & A_BUTTON)
 		{
 			pdisk_dump_mode = PDISK_MODE_DUMP;
@@ -134,6 +150,7 @@ void pdisk_update()
 			pdisk_dump_pause = 0;
 			pdisk_error_count = 0;
 		}
+		//Press B Button to quit
 		if (readControllerPressed() & B_BUTTON)
 		{
 			process_change(PROCMODE_PMAIN);
@@ -141,6 +158,7 @@ void pdisk_update()
 	}
 	else if (pdisk_dump_mode == PDISK_MODE_DUMP)
 	{
+		//Mode: Dump Mode Process
 		s32 offset, error, size;
 
 		if (readControllerPressed() & START_BUTTON)
@@ -154,11 +172,33 @@ void pdisk_update()
 			size = diskGetLBABlockSize(pdisk_cur_lba);
 			error = diskReadLBA(pdisk_cur_lba);
 			copyToCartPi(blockData, (char*)offset, size);
-			pdisk_cur_lba++;
-			if (error != LEO_STATUS_GOOD)
+
+			switch (error)
 			{
-				pdisk_error_count++;
+				case LEO_SENSE_DRIVE_NOT_READY:
+				case LEO_SENSE_DIAGNOSTIC_FAILURE:
+				case LEO_SENSE_COMMAND_PHASE_ERROR:
+				case LEO_SENSE_DATA_PHASE_ERROR:
+				case LEO_SENSE_UNKNOWN_FORMAT:
+				case LEO_SENSE_DEVICE_COMMUNICATION_FAILURE:
+				case LEO_SENSE_MEDIUM_NOT_PRESENT:
+				case LEO_SENSE_POWERONRESET_DEVICERESET_OCCURED:
+				case LEO_SENSE_MEDIUM_MAY_HAVE_CHANGED:
+				case LEO_SENSE_EJECTED_ILLEGALLY_RESUME:
+					pdisk_error_fatal = error;
+					pdisk_dump_mode = PDISK_MODE_FATAL;
+				case LEO_SENSE_NO_ADDITIONAL_SENSE_INFOMATION:
+					break;
+				case LEO_SENSE_NO_SEEK_COMPLETE:
+				case LEO_SENSE_WRITE_FAULT:
+				case LEO_SENSE_UNRECOVERED_READ_ERROR:
+				case LEO_SENSE_NO_REFERENCE_POSITION_FOUND:
+				case LEO_SENSE_TRACK_FOLLOWING_ERROR:
+				default:
+					pdisk_error_count++;
 			}
+
+			pdisk_cur_lba++;
 		}
 		else
 		{
@@ -177,8 +217,20 @@ void pdisk_update()
 			pdisk_dump_mode = PDISK_MODE_FINISH;
 		}
 	}
+	else if (pdisk_dump_mode == PDISK_MODE_FATAL)
+	{
+		//Mode: Fatal Error
+		
+		//Interaction
+		if (readControllerPressed() & A_BUTTON)
+		{
+			process_change(PROCMODE_PMAIN);
+		}
+	}
 	else if (pdisk_dump_mode == PDISK_MODE_FINISH)
 	{
+		//Mode: Dump is done
+
 		//TODO: Write to SD Card
 
 		//Interaction
@@ -349,11 +401,50 @@ void pdisk_render(s32 fullrender)
 
 			pdisk_f_progress((pdisk_cur_lba / (float)MAX_P_LBA));
 		}
+		else if (pdisk_dump_mode == PDISK_MODE_FATAL)
+		{
+			dd_setTextColor(255,255,255);
+			dd_setTextPosition(20, 16*4);
+			sprintf(console_text, "%i", pdisk_cur_lba);
+			dd_printText(FALSE, console_text);
+
+			dd_setTextPosition(58, 16*4);
+			sprintf(console_text, "/%i blocks\n", MAX_P_LBA);
+			dd_printText(FALSE, console_text);
+
+			if (pdisk_error_count)
+			{
+				dd_setTextColor(255,80,25);
+				dd_setTextPosition(20, 16*5);
+				sprintf(console_text, "%i errors found", pdisk_error_count);
+				dd_printText(FALSE, console_text);
+			}
+
+			dd_setTextColor(255,80,25);
+			dd_setTextPosition(20, 16*7);
+			dd_printText(FALSE, "FATAL ERROR:\n");
+			sprintf(console_text, "%i / %s", pdisk_error_fatal, diskErrorString(pdisk_error_fatal));
+			dd_printText(FALSE, console_text);
+
+			dd_setTextPosition(20, 16*10);
+			dd_setTextColor(255,255,255);
+			dd_printText(FALSE, "Press ");
+			dd_setTextColor(25,25,255);
+			dd_printText(FALSE, "A Button");
+			dd_setTextColor(255,255,255);
+			dd_printText(FALSE, " to go back to menu.");
+
+			pdisk_f_progress((pdisk_cur_lba / (float)MAX_P_LBA));
+		}
 		else if (pdisk_dump_mode == PDISK_MODE_FINISH)
 		{
 			dd_setTextColor(255,255,255);
 			dd_setTextPosition(20, 16*4);
-			sprintf(console_text, "%i/%i blocks\n", MAX_P_LBA, MAX_P_LBA);
+			sprintf(console_text, "%i", MAX_P_LBA);
+			dd_printText(FALSE, console_text);
+
+			dd_setTextPosition(58, 16*4);
+			sprintf(console_text, "/%i blocks\n", MAX_P_LBA);
 			dd_printText(FALSE, console_text);
 
 			dd_setTextPosition(20, 16*10);
