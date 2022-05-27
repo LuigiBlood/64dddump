@@ -7,6 +7,7 @@
 #include	"thread.h"
 #include	"ddtextlib.h"
 
+#include	"asicdrive.h"
 #include	"leohax.h"
 #include	"cart.h"
 #include	"control.h"
@@ -23,12 +24,16 @@
 #define PDISK_MODE_DUMP		7
 #define PDISK_MODE_FINISH	8
 s32 pdisk_dump_mode;
-s32 pdisk_cur_lba;
-s32 pdisk_drivetype;
 
 #define PDISK_SELECT2_MIN	0
 #define PDISK_SELECT2_MAX	2
 s32 pdisk_select;
+s32 pdisk_select_dump;
+
+s32 pdisk_cur_lba;
+s32 pdisk_drivetype;
+s32 pdisk_dump_pause;
+s32 pdisk_error_count;
 
 void pdisk_f_progress(float percent)
 {
@@ -51,10 +56,11 @@ void pdisk_f_progress(float percent)
 
 void pdisk_init()
 {
-	pdisk_cur_lba = 0;
 	pdisk_drivetype = diskGetDriveType();
 	pdisk_dump_mode = PDISK_MODE_INIT;
-	pdisk_select = 0;
+	
+	bzero(blockData, USR_SECS_PER_BLK*SEC_SIZE_ZONE0);
+	bzero(errorData, MAX_P_LBA);
 }
 
 void pdisk_update()
@@ -122,7 +128,11 @@ void pdisk_update()
 
 		if (readControllerPressed() & A_BUTTON)
 		{
-			pdisk_dump_mode = PDISK_MODE_CONF1;
+			pdisk_dump_mode = PDISK_MODE_DUMP;
+			pdisk_select_dump = pdisk_select;
+			pdisk_cur_lba = 0;
+			pdisk_dump_pause = 0;
+			pdisk_error_count = 0;
 		}
 		if (readControllerPressed() & B_BUTTON)
 		{
@@ -133,10 +143,39 @@ void pdisk_update()
 	{
 		s32 offset, error, size;
 
-		offset = diskGetLBAOffset(pdisk_cur_lba);
-		size = diskGetLBABlockSize(pdisk_cur_lba);
-		error = diskReadLBA(pdisk_cur_lba);
-		copyToCartPi(blockData, (char*)offset, size);
+		if (readControllerPressed() & START_BUTTON)
+		{
+			pdisk_dump_pause ^= 1;
+		}
+
+		if (!pdisk_dump_pause)
+		{
+			offset = diskGetLBAOffset(pdisk_cur_lba);
+			size = diskGetLBABlockSize(pdisk_cur_lba);
+			error = diskReadLBA(pdisk_cur_lba);
+			copyToCartPi(blockData, (char*)offset, size);
+			pdisk_cur_lba++;
+			if (error != LEO_STATUS_GOOD)
+			{
+				pdisk_error_count++;
+			}
+		}
+		else
+		{
+			if (readControllerPressed() & U_CBUTTONS)
+			{
+				//Skip to RAM or end
+			}
+			if (readControllerPressed() & B_BUTTON)
+			{
+				process_change(PROCMODE_PMAIN);
+			}
+		}
+
+		if (pdisk_cur_lba > MAX_P_LBA)
+		{
+			pdisk_dump_mode = PDISK_MODE_FINISH;
+		}
 	}
 	else if (pdisk_dump_mode == PDISK_MODE_FINISH)
 	{
@@ -246,7 +285,86 @@ void pdisk_render(s32 fullrender)
 			dd_setTextPosition(20, 16*11);
 			if (pdisk_select == 0) dd_printText(TRUE, "Dumps the retail disk, then\ntries to dump unformatted segments,\nif it fails, skips the segment.");
 			else if (pdisk_select == 1) dd_printText(TRUE, "\nDumps the entire disk data and\nbruteforces through bad blocks.");
-			else if (pdisk_select == 2) dd_printText(TRUE, "Dumps the entire disk data and\nbruteforces through bad blocks,\nallows to lower redundant error reads.");
+			else if (pdisk_select == 2) dd_printText(TRUE, "Dumps the entire disk data and\nbruteforces through bad blocks,\nallows to lower repeated error reads.");
+		}
+		else if (pdisk_dump_mode == PDISK_MODE_DUMP)
+		{
+			dd_setTextColor(255,255,255);
+			dd_setTextPosition(20, 16*4);
+			sprintf(console_text, "%i", pdisk_cur_lba);
+			dd_printText(FALSE, console_text);
+
+			dd_setTextPosition(58, 16*4);
+			sprintf(console_text, "/%i blocks\n", MAX_P_LBA);
+			dd_printText(FALSE, console_text);
+
+			if (pdisk_error_count)
+			{
+				dd_setTextColor(255,80,25);
+				dd_setTextPosition(20, 16*5);
+				sprintf(console_text, "%i errors found", pdisk_error_count);
+				dd_printText(FALSE, console_text);
+			}
+
+			if (!pdisk_dump_pause)
+			{
+				dd_setTextPosition(20, 16*8);
+				dd_setTextColor(255,255,255);
+				dd_printText(FALSE, "Press ");
+				dd_setTextColor(50,50,50);
+				dd_printText(FALSE, "START Button");
+				dd_setTextColor(255,255,255);
+				dd_printText(FALSE, " to pause the dump.");
+			}
+			else
+			{
+				dd_setTextPosition(20, 16*6);
+				dd_setTextColor(255,255,255);
+				dd_printText(FALSE, "Paused");
+
+				dd_setTextPosition(20, 16*8);
+				dd_setTextColor(255,255,255);
+				dd_printText(FALSE, "Press ");
+				dd_setTextColor(50,50,50);
+				dd_printText(FALSE, "START Button");
+				dd_setTextColor(255,255,255);
+				dd_printText(FALSE, " to resume the dump.");
+
+				dd_setTextPosition(20, 16*9);
+				dd_setTextColor(255,255,255);
+				dd_printText(FALSE, "Press ");
+				dd_setTextColor(255,255,25);
+				dd_printText(FALSE, "C Button Up");
+				dd_setTextColor(255,255,255);
+				dd_printText(FALSE, " to skip to RAM Area.");
+
+				dd_setTextPosition(20, 16*10);
+				dd_setTextColor(255,255,255);
+				dd_printText(FALSE, "Press ");
+				dd_setTextColor(25,255,25);
+				dd_printText(FALSE, "B Button");
+				dd_setTextColor(255,255,255);
+				dd_printText(FALSE, " to cancel the dump.");
+			}
+
+			pdisk_f_progress((pdisk_cur_lba / (float)MAX_P_LBA));
+		}
+		else if (pdisk_dump_mode == PDISK_MODE_FINISH)
+		{
+			dd_setTextColor(255,255,255);
+			dd_setTextPosition(20, 16*4);
+			sprintf(console_text, "%i/%i blocks\n", MAX_P_LBA, MAX_P_LBA);
+			dd_printText(FALSE, console_text);
+
+			dd_setTextPosition(20, 16*10);
+			dd_setTextColor(255,255,255);
+			dd_printText(FALSE, "Press ");
+			dd_setTextColor(25,25,255);
+			dd_printText(FALSE, "A Button");
+			dd_setTextColor(255,255,255);
+			dd_printText(FALSE, " to go back to menu.");
+
+			pdisk_f_progress(1.0f);
 		}
 	}
 }
