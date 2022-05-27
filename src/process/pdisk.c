@@ -39,6 +39,9 @@ s32 pdisk_error_count;	//Error Counter
 s32 pdisk_error_fatal;	//Fatal Error Sense
 s32 pdisk_skip_lba_end;	//Skip LBA End
 
+#define PDISK_ERROR_COUNT_SKIP_MAX	5
+s32 pdisk_error_count_skip;
+
 void pdisk_f_progress(float percent)
 {
 	char console_text[256];
@@ -154,6 +157,7 @@ void pdisk_update()
 			pdisk_dump_pause = 0;
 			pdisk_error_count = 0;
 			pdisk_skip_lba_end = -1;
+			pdisk_error_count_skip = 0;
 		}
 		//Press B Button to quit
 		if (readControllerPressed() & B_BUTTON)
@@ -199,6 +203,10 @@ void pdisk_update()
 				case LEO_SENSE_GOOD:
 				case LEO_SENSE_SKIPPED_LBA:
 					pdisk_cur_lba++;
+					if (pdisk_select_dump == 0)
+					{
+						pdisk_error_count_skip = 0;
+					}
 					break;
 				case LEO_SENSE_NO_SEEK_COMPLETE:
 				case LEO_SENSE_WRITE_FAULT:
@@ -207,6 +215,30 @@ void pdisk_update()
 				case LEO_SENSE_TRACK_FOLLOWING_ERROR:
 				default:
 					pdisk_error_count++;
+					if (pdisk_select_dump == 0)
+					{
+						//Skip Mode
+						if (pdisk_cur_lba < pdisk_lba_ram_start && pdisk_cur_lba > pdisk_lba_rom_end)
+						{
+							//Between Formatted ROM End and RAM Start
+							pdisk_error_count_skip++;
+							if (pdisk_error_count_skip >= PDISK_ERROR_COUNT_SKIP_MAX)
+							{
+								pdisk_skip_lba_end = pdisk_lba_ram_start;
+								pdisk_error_count_skip = 0;
+							}
+						}
+						else if (pdisk_cur_lba > pdisk_lba_ram_end && pdisk_cur_lba < MAX_P_LBA)
+						{
+							//Between Formatted RAM End and Max LBA
+							pdisk_error_count_skip++;
+							if (pdisk_error_count_skip >= PDISK_ERROR_COUNT_SKIP_MAX)
+							{
+								pdisk_skip_lba_end = MAX_P_LBA;
+								pdisk_error_count_skip = 0;
+							}
+						}
+					}
 					pdisk_cur_lba++;
 					break;
 			}
