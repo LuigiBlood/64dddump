@@ -177,6 +177,11 @@ void pdisk_update()
 
 		if (!pdisk_dump_pause)
 		{
+			if (pdisk_skip_lba_end != -1)
+			{
+				pdisk_e_skiplba(pdisk_skip_lba_end);
+				pdisk_skip_lba_end = -1;
+			}
 			offset = diskGetLBAOffset(pdisk_cur_lba);
 			size = diskGetLBABlockSize(pdisk_cur_lba);
 			if (pdisk_skip_lba_end <= pdisk_cur_lba)
@@ -199,6 +204,7 @@ void pdisk_update()
 				case LEO_SENSE_EJECTED_ILLEGALLY_RESUME:
 					pdisk_error_fatal = error;
 					pdisk_dump_mode = PDISK_MODE_FATAL;
+					diskBreakMotor();
 					break;
 				case LEO_SENSE_GOOD:
 				case LEO_SENSE_SKIPPED_LBA:
@@ -267,6 +273,7 @@ void pdisk_update()
 
 		if (pdisk_cur_lba > MAX_P_LBA)
 		{
+			diskBreakMotor();
 			pdisk_dump_mode = PDISK_MODE_FINISH;
 		}
 	}

@@ -6,5 +6,6 @@ extern s32 pdisk_lba_ram_start;
 extern s32 pdisk_lba_ram_end;
 
 extern s32 pdisk_e_checkbounds();
+extern s32 pdisk_e_skiplba(s32 lba_skip_max);
 
 #endif

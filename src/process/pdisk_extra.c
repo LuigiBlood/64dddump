@@ -16,6 +16,7 @@
 #include	"process.h"
 #include	"version.h"
 
+extern s32 pdisk_cur_lba;
 extern s32 pdisk_drivetype;
 s32 pdisk_lba_rom_end;
 s32 pdisk_lba_ram_start;
@@ -61,4 +62,10 @@ s32 pdisk_e_checkbounds()
 			pdisk_lba_ram_end = MAX_P_LBA;
 		}
 	}
+}
+
+s32 pdisk_e_skiplba(s32 lba_skip_max)
+{
+	for (; pdisk_cur_lba <= lba_skip_max; pdisk_cur_lba++)
+		diskSkipLBA(pdisk_cur_lba);
 }
