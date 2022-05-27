@@ -54,6 +54,16 @@ s32 diskCheck()
 	//TODO: Actual checks
 }
 
+s32 diskBreakMotor()
+{
+	/* Apply the brakes to the motor */
+	s32 error;
+	LEOCmd _cmdBlk;
+
+	LeoSpdlMotor(&_cmdBlk, LEO_MOTOR_BRAKE, &diskMsgQ);
+	osRecvMesg(&diskMsgQ, (OSMesg *)&error, OS_MESG_BLOCK);
+}
+
 /* IPL ROM */
 void iplCopy(char *src, char *dest, const int len)
 {

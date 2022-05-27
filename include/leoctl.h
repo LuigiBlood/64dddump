@@ -39,6 +39,7 @@ extern s32 diskReadLBA(s32 lba);
 extern s32 diskSkipLBA(s32 lba);
 extern s32 diskReadID();
 extern s32 diskCheck();
+extern s32 diskBreakMotor();
 //-ipl
 extern void iplCopy(char *src, char *dest, const int len);
 extern void iplBlockRead(s32 addr);
