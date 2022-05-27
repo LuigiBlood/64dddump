@@ -15,6 +15,7 @@
 #include	"64drive.h"
 #include	"process.h"
 #include	"version.h"
+#include	"pdisk_extra.h"
 
 #define PDISK_MODE_INIT		0
 #define PDISK_MODE_WAIT		1
@@ -28,14 +29,15 @@ s32 pdisk_dump_mode;
 
 #define PDISK_SELECT2_MIN	0
 #define PDISK_SELECT2_MAX	2
-s32 pdisk_select;
-s32 pdisk_select_dump;
+s32 pdisk_select;		//Currently Selected
+s32 pdisk_select_dump;	//Selected Dump Type
 
-s32 pdisk_cur_lba;
-s32 pdisk_drivetype;
-s32 pdisk_dump_pause;
-s32 pdisk_error_count;
-s32 pdisk_error_fatal;
+s32 pdisk_cur_lba;		//Current LBA
+s32 pdisk_drivetype;	//Drive Type
+s32 pdisk_dump_pause;	//is Dump Paused
+s32 pdisk_error_count;	//Error Counter
+s32 pdisk_error_fatal;	//Fatal Error Sense
+s32 pdisk_skip_lba_end;	//Skip LBA End
 
 void pdisk_f_progress(float percent)
 {
@@ -60,6 +62,7 @@ void pdisk_init()
 {
 	pdisk_drivetype = diskGetDriveType();
 	pdisk_dump_mode = PDISK_MODE_INIT;
+	pdisk_skip_lba_end = -1;
 	
 	bzero(blockData, USR_SECS_PER_BLK*SEC_SIZE_ZONE0);
 	bzero(errorData, MAX_P_LBA);
@@ -96,6 +99,7 @@ void pdisk_update()
 		if (diskReadID() == LEO_STATUS_GOOD)
 		{
 			pdisk_dump_mode = PDISK_MODE_CONF1;
+			pdisk_e_checkbounds();
 		}
 	}
 	else if (pdisk_dump_mode == PDISK_MODE_CONF1)
@@ -149,6 +153,7 @@ void pdisk_update()
 			pdisk_cur_lba = 0;
 			pdisk_dump_pause = 0;
 			pdisk_error_count = 0;
+			pdisk_skip_lba_end = -1;
 		}
 		//Press B Button to quit
 		if (readControllerPressed() & B_BUTTON)
@@ -170,7 +175,10 @@ void pdisk_update()
 		{
 			offset = diskGetLBAOffset(pdisk_cur_lba);
 			size = diskGetLBABlockSize(pdisk_cur_lba);
-			error = diskReadLBA(pdisk_cur_lba);
+			if (pdisk_skip_lba_end <= pdisk_cur_lba)
+				error = diskReadLBA(pdisk_cur_lba);
+			else
+				error = diskSkipLBA(pdisk_cur_lba);
 			copyToCartPi(blockData, (char*)offset, size);
 
 			switch (error)
@@ -187,7 +195,10 @@ void pdisk_update()
 				case LEO_SENSE_EJECTED_ILLEGALLY_RESUME:
 					pdisk_error_fatal = error;
 					pdisk_dump_mode = PDISK_MODE_FATAL;
-				case LEO_SENSE_NO_ADDITIONAL_SENSE_INFOMATION:
+					break;
+				case LEO_SENSE_GOOD:
+				case LEO_SENSE_SKIPPED_LBA:
+					pdisk_cur_lba++;
 					break;
 				case LEO_SENSE_NO_SEEK_COMPLETE:
 				case LEO_SENSE_WRITE_FAULT:
@@ -196,15 +207,25 @@ void pdisk_update()
 				case LEO_SENSE_TRACK_FOLLOWING_ERROR:
 				default:
 					pdisk_error_count++;
+					pdisk_cur_lba++;
+					break;
 			}
-
-			pdisk_cur_lba++;
 		}
 		else
 		{
 			if (readControllerPressed() & U_CBUTTONS)
 			{
 				//Skip to RAM or end
+				bzero(blockData, USR_SECS_PER_BLK*SEC_SIZE_ZONE0);
+
+				if ((LEO_sys_data[0x05] & 0x0F) >= 6)
+					pdisk_skip_lba_end = MAX_P_LBA;
+				else if (pdisk_cur_lba < pdisk_lba_ram_start)
+					pdisk_skip_lba_end = pdisk_lba_ram_start-1;
+				else if (pdisk_cur_lba <= MAX_P_LBA)
+					pdisk_skip_lba_end = MAX_P_LBA;
+
+				pdisk_dump_pause = 0;
 			}
 			if (readControllerPressed() & B_BUTTON)
 			{
@@ -296,7 +317,10 @@ void pdisk_render(s32 fullrender)
 			else
 				dd_printText(FALSE, "Disk Region: Unknown\n");
 
-			dd_setTextPosition(20, 16*8);
+			sprintf(console_text, "Disk Type: %i\n", (LEO_sys_data[0x05] & 0x0F));
+			dd_printText(FALSE, console_text);
+
+			dd_setTextPosition(20, 16*9);
 			dd_setTextColor(255,255,255);
 			dd_printText(FALSE, "Press ");
 			dd_setTextColor(25,25,255);
@@ -304,7 +328,7 @@ void pdisk_render(s32 fullrender)
 			dd_setTextColor(255,255,255);
 			dd_printText(FALSE, " to continue...");
 
-			dd_setTextPosition(20, 16*9);
+			dd_setTextPosition(20, 16*10);
 			dd_setTextColor(255,255,255);
 			dd_printText(FALSE, "Press ");
 			dd_setTextColor(25,255,25);
@@ -347,8 +371,13 @@ void pdisk_render(s32 fullrender)
 			dd_printText(FALSE, console_text);
 
 			dd_setTextPosition(58, 16*4);
-			sprintf(console_text, "/%i blocks\n", MAX_P_LBA);
+			sprintf(console_text, "/%i blocks", MAX_P_LBA);
 			dd_printText(FALSE, console_text);
+
+			if (pdisk_skip_lba_end < pdisk_cur_lba)
+				dd_printText(FALSE, " (DUMP)");
+			else
+				dd_printText(FALSE, " (SKIP)");
 
 			if (pdisk_error_count)
 			{
@@ -388,7 +417,12 @@ void pdisk_render(s32 fullrender)
 				dd_setTextColor(255,255,25);
 				dd_printText(FALSE, "C Button Up");
 				dd_setTextColor(255,255,255);
-				dd_printText(FALSE, " to skip to RAM Area.");
+				if ((LEO_sys_data[0x05] & 0x0F) >= 6)
+					dd_printText(FALSE, " to skip to the end.");
+				else if (pdisk_cur_lba < pdisk_lba_ram_start)
+					dd_printText(FALSE, " to skip to RAM Area.");
+				else if (pdisk_cur_lba <= MAX_P_LBA)
+					dd_printText(FALSE, " to skip to the end.");
 
 				dd_setTextPosition(20, 16*10);
 				dd_setTextColor(255,255,255);
