@@ -615,6 +615,14 @@ void pdisk_render(s32 fullrender)
 			sprintf(console_text, "/%i blocks\n", MAX_P_LBA);
 			dd_printText(FALSE, console_text);
 
+			if (pdisk_error_count)
+			{
+				dd_setTextColor(255,80,25);
+				dd_setTextPosition(20, 16*5);
+				sprintf(console_text, "%i errors found", pdisk_error_count);
+				dd_printText(FALSE, console_text);
+			}
+
 			dd_setTextPosition(20, 16*10);
 			dd_setTextColor(255,255,255);
 			dd_printText(FALSE, "Press ");
