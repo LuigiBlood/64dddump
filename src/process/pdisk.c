@@ -31,8 +31,11 @@ s32 pdisk_dump_mode;
 
 #define PDISK_SELECT2_MIN	0
 #define PDISK_SELECT2_MAX	2
+#define PDISK_SELECT3_MIN	0
+#define PDISK_SELECT3_MAX	3
 s32 pdisk_select;		//Currently Selected
 s32 pdisk_select_dump;	//Selected Dump Type
+s32 pdisk_select_retries;	//Amount of retries
 
 s32 pdisk_cur_lba;		//Current LBA
 s32 pdisk_drivetype;	//Drive Type
@@ -155,11 +158,47 @@ void pdisk_update()
 		{
 			pdisk_dump_mode = PDISK_MODE_PREP;
 			pdisk_select_dump = pdisk_select;
+			pdisk_select_retries = 0;
+			if (pdisk_select == 2)
+				pdisk_dump_mode = PDISK_MODE_CONF3;
 		}
 		//Press B Button to quit
 		if (readControllerPressed() & B_BUTTON)
 		{
 			process_change(PROCMODE_PMAIN);
+		}
+	}
+	else if (pdisk_dump_mode == PDISK_MODE_CONF3)
+	{
+		//Mode: Menu for Dump Type (32, 16, 8)
+
+		//Check for Disk presence, reset when disk is ejected
+		if (!isDiskPresent()) pdisk_dump_mode = PDISK_MODE_WAIT;
+
+		//Selection
+		if (readControllerPressed() & U_JPAD)
+		{
+			pdisk_select--;
+		}
+		if (readControllerPressed() & D_JPAD)
+		{
+			pdisk_select++;
+		}
+
+		if (pdisk_select < PDISK_SELECT3_MIN) pdisk_select = PDISK_SELECT3_MAX;
+		if (pdisk_select > PDISK_SELECT3_MAX) pdisk_select = PDISK_SELECT3_MIN;
+
+		//Press A Button to start dump
+		if (readControllerPressed() & A_BUTTON)
+		{
+			pdisk_dump_mode = PDISK_MODE_PREP;
+			pdisk_select_retries = pdisk_select;
+		}
+		//Press B Button to go back a menu
+		if (readControllerPressed() & B_BUTTON)
+		{
+			pdisk_dump_mode = PDISK_MODE_CONF2;
+			pdisk_select = 0;
 		}
 	}
 	else if (pdisk_dump_mode == PDISK_MODE_PREP)
@@ -174,8 +213,11 @@ void pdisk_update()
 		pdisk_skip_lba_end = -1;
 		pdisk_error_count_skip = 0;
 
+		haxReadErrorRetry(64 >> pdisk_select_retries);
+
 		bzero(blockData, USR_SECS_PER_BLK*SEC_SIZE_ZONE0);
 		bzero(errorData, MAX_P_LBA);
+		osWritebackDCacheAll();
 
 		//Zero the ROM Area so the skipping process can be even faster and focus on dumping the disk faster
 		for (offset = 0; offset < 0x3DEC800; offset += USR_SECS_PER_BLK*SEC_SIZE_ZONE0)
@@ -186,8 +228,6 @@ void pdisk_update()
 	else if (pdisk_dump_mode == PDISK_MODE_DUMP)
 	{
 		//Mode: Dump Mode Process
-		s32 offset, error, size;
-
 		if (readControllerPressed() & START_BUTTON)
 		{
 			pdisk_dump_pause ^= 1;
@@ -195,17 +235,18 @@ void pdisk_update()
 
 		if (!pdisk_dump_pause)
 		{
+			s32 offset, error, size;
+
 			if (pdisk_skip_lba_end != -1)
 			{
 				pdisk_e_skiplba(pdisk_skip_lba_end);
 				pdisk_skip_lba_end = -1;
 			}
+
 			offset = diskGetLBAOffset(pdisk_cur_lba);
 			size = diskGetLBABlockSize(pdisk_cur_lba);
-			if (pdisk_skip_lba_end <= pdisk_cur_lba)
-				error = diskReadLBA(pdisk_cur_lba);
-			else
-				error = diskSkipLBA(pdisk_cur_lba);
+			error = diskReadLBA(pdisk_cur_lba);
+			osWritebackDCacheAll();
 			copyToCartPi(blockData, (char*)offset, size);
 
 			switch (error)
@@ -285,6 +326,7 @@ void pdisk_update()
 			}
 			if (readControllerPressed() & B_BUTTON)
 			{
+				diskBreakMotor();
 				process_change(PROCMODE_PMAIN);
 			}
 		}
@@ -412,13 +454,42 @@ void pdisk_render(s32 fullrender)
 
 			if (pdisk_select == 2) dd_setTextColor(0,255,0);
 			else dd_setTextColor(25,25,25);
-			dd_printText(TRUE, "Dump Entire Disk Faster\n");
+			dd_printText(TRUE, "Dump Entire Disk (Advanced)\n");
 
 			dd_setTextColor(255,255,255);
 			dd_setTextPosition(20, 16*11);
 			if (pdisk_select == 0) dd_printText(TRUE, "Dumps the retail disk, then\ntries to dump unformatted segments,\nif it fails, skips the segment.");
 			else if (pdisk_select == 1) dd_printText(TRUE, "\nDumps the entire disk data and\nbruteforces through bad blocks.");
 			else if (pdisk_select == 2) dd_printText(TRUE, "Dumps the entire disk data and\nbruteforces through bad blocks,\nallows to lower repeated error reads.");
+		}
+		else if (pdisk_dump_mode == PDISK_MODE_CONF3)
+		{
+			dd_setTextColor(255,255,255);
+			dd_setTextPosition(20, 16*4);
+			dd_printText(TRUE, "Select Retry Amount:");
+
+			dd_setTextPosition(60, 16*5);
+
+			if (pdisk_select == 0) dd_setTextColor(0,255,0);
+			else dd_setTextColor(25,25,25);
+			dd_printText(TRUE, "64 retries (up to 2 seconds)\n");
+
+			if (pdisk_select == 1) dd_setTextColor(0,255,0);
+			else dd_setTextColor(25,25,25);
+			dd_printText(TRUE, "32 retries (up to 1 second)\n");
+
+			if (pdisk_select == 2) dd_setTextColor(0,255,0);
+			else dd_setTextColor(25,25,25);
+			dd_printText(TRUE, "16 retries (up to 0.5 seconds)\n");
+
+			if (pdisk_select == 3) dd_setTextColor(0,255,0);
+			else dd_setTextColor(25,25,25);
+			dd_printText(TRUE, "8 retries (up to 0.25 seconds)\n");
+
+			dd_setTextColor(255,255,255);
+			dd_setTextPosition(20, 16*11);
+			if (pdisk_select == 0) dd_printText(TRUE, "\nThe default amount of retries\nper bad block.");
+			else dd_printText(TRUE, "Reduces the amount of retries\nand time per bad block.\nLowers accuracy.");
 		}
 		else if (pdisk_dump_mode == PDISK_MODE_PREP)
 		{
