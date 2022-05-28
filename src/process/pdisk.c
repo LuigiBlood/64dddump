@@ -22,6 +22,8 @@
 #define PDISK_MODE_CHECK	2
 #define PDISK_MODE_CONF1	3
 #define PDISK_MODE_CONF2	4
+#define PDISK_MODE_CONF3	5
+#define PDISK_MODE_PREP		6
 #define PDISK_MODE_DUMP		7
 #define PDISK_MODE_FATAL	8
 #define PDISK_MODE_FINISH	10
@@ -151,18 +153,34 @@ void pdisk_update()
 		//Press A Button to start dump
 		if (readControllerPressed() & A_BUTTON)
 		{
-			pdisk_dump_mode = PDISK_MODE_DUMP;
+			pdisk_dump_mode = PDISK_MODE_PREP;
 			pdisk_select_dump = pdisk_select;
-			pdisk_cur_lba = 0;
-			pdisk_dump_pause = 0;
-			pdisk_error_count = 0;
-			pdisk_skip_lba_end = -1;
-			pdisk_error_count_skip = 0;
 		}
 		//Press B Button to quit
 		if (readControllerPressed() & B_BUTTON)
 		{
 			process_change(PROCMODE_PMAIN);
+		}
+	}
+	else if (pdisk_dump_mode == PDISK_MODE_PREP)
+	{
+		//Mode: Prepare Dump
+		s32 offset;
+
+		pdisk_dump_mode = PDISK_MODE_DUMP;
+		pdisk_cur_lba = 0;
+		pdisk_dump_pause = 0;
+		pdisk_error_count = 0;
+		pdisk_skip_lba_end = -1;
+		pdisk_error_count_skip = 0;
+
+		bzero(blockData, USR_SECS_PER_BLK*SEC_SIZE_ZONE0);
+		bzero(errorData, MAX_P_LBA);
+
+		//Zero the ROM Area so the skipping process can be even faster and focus on dumping the disk faster
+		for (offset = 0; offset < 0x3DEC800; offset += USR_SECS_PER_BLK*SEC_SIZE_ZONE0)
+		{
+			copyToCartPi(blockData, (char*)offset, USR_SECS_PER_BLK*SEC_SIZE_ZONE0);
 		}
 	}
 	else if (pdisk_dump_mode == PDISK_MODE_DUMP)
@@ -401,6 +419,12 @@ void pdisk_render(s32 fullrender)
 			if (pdisk_select == 0) dd_printText(TRUE, "Dumps the retail disk, then\ntries to dump unformatted segments,\nif it fails, skips the segment.");
 			else if (pdisk_select == 1) dd_printText(TRUE, "\nDumps the entire disk data and\nbruteforces through bad blocks.");
 			else if (pdisk_select == 2) dd_printText(TRUE, "Dumps the entire disk data and\nbruteforces through bad blocks,\nallows to lower repeated error reads.");
+		}
+		else if (pdisk_dump_mode == PDISK_MODE_PREP)
+		{
+			dd_setTextColor(255,255,255);
+			dd_setTextPosition(20, 16*4);
+			dd_printText(FALSE, "Preparing dump process...\n(Zero the ROM Area data)");
 		}
 		else if (pdisk_dump_mode == PDISK_MODE_DUMP)
 		{
