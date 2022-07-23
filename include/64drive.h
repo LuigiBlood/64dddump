@@ -2,7 +2,7 @@
 #define _64drive_h_
 
 #include <ultra64.h>
-#include "cart.h"
+#include "cartaccess.h"
 
 #define D64_CIBASE_ADDRESS	0xB8000000
 #define D64_REGISTER_MAGIC	0x000002EC

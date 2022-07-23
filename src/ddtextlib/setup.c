@@ -1,7 +1,7 @@
 #include	<ultra64.h>
 #include	<PR/leo.h>
 #include	"ddtextlib.h"
-#include	"cart.h"
+#include	"cartaccess.h"
 
 s32 cur_framebuffer;
 

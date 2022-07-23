@@ -4,7 +4,7 @@ TARGET_STRING := main
 TARGET := $(TARGET_STRING)
 
 # Preprocessor definitions
-DEFINES := _FINALROM=1 NDEBUG=1 F3DEX_GBI_2=1
+DEFINES := _ULTRA64=1 _FINALROM=1 NDEBUG=1 F3DEX_GBI_2=1
 
 SRC_DIRS :=
 
@@ -29,7 +29,7 @@ BOOT		:= /usr/lib/n64/PR/bootcode/boot.6102
 BOOT_OBJ	:= $(BUILD_DIR)/boot.6102.o
 
 # Directories containing source files
-SRC_DIRS += src src/buffers src/ci src/ddtextlib src/leo src/main src/process asm data
+SRC_DIRS += src src/buffers src/ci src/ddtextlib src/leo src/main src/process src/ff asm data
 
 C_FILES           := $(foreach dir,$(SRC_DIRS),$(wildcard $(dir)/*.c))
 S_FILES           := $(foreach dir,$(SRC_DIRS),$(wildcard $(dir)/*.s))
@@ -54,7 +54,7 @@ AR        := mips-n64-ar
 OBJDUMP   := mips-n64-objdump
 OBJCOPY   := mips-n64-objcopy
 
-INCLUDE_DIRS += /usr/include/n64 /usr/include/n64/PR include $(BUILD_DIR) $(BUILD_DIR)/include src .
+INCLUDE_DIRS += /usr/include/n64 /usr/include/nustd /usr/include/n64/PR include $(BUILD_DIR) $(BUILD_DIR)/include src .
 
 C_DEFINES := $(foreach d,$(DEFINES),-D$(d))
 DEF_INC_CFLAGS := $(foreach i,$(INCLUDE_DIRS),-I$(i)) $(C_DEFINES)
@@ -125,7 +125,7 @@ $(BOOT_OBJ): $(BOOT)
 # Link final ELF file
 $(ELF): $(O_FILES) $(BUILD_DIR)/$(LD_SCRIPT)
 	@$(PRINT) "$(GREEN)Linking ELF file:  $(BLUE)$@ $(NO_COL)\n"
-	$(V)$(LD) -L $(BUILD_DIR) -T $(BUILD_DIR)/$(LD_SCRIPT) -Map $(BUILD_DIR)/$(TARGET).map --no-check-sections -o $@ $(O_FILES) -L/usr/lib/n64 -lnustd -lleo -lultra_rom -L$(N64_LIBGCCDIR) -lgcc
+	$(V)$(LD) -L $(BUILD_DIR) -T $(BUILD_DIR)/$(LD_SCRIPT) -Map $(BUILD_DIR)/$(TARGET).map --no-check-sections -o $@ $(O_FILES) -L/usr/lib/n64 -lcart_ultra -lnustd -lleo -lultra_rom -L$(N64_LIBGCCDIR) -lgcc
 
 # Build ROM
 $(ROM): $(ELF)

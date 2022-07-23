@@ -3,12 +3,13 @@
 #include	<nustd/math.h>
 #include	<nustd/string.h>
 #include	<nustd/stdlib.h>
+#include	<cart.h>
 
 #include	"thread.h"
 #include	"ddtextlib.h"
 
 #include	"leohax.h"
-#include	"cart.h"
+#include	"cartaccess.h"
 #include	"control.h"
 #include	"leoctl.h"
 #include	"64drive.h"
@@ -102,12 +103,17 @@ void pmain_render(s32 fullrender)
 			dd_printText(TRUE, "Please power off the Nintendo 64\nand insert a 64DD Disk Drive\nor/and an IPL ROM Cartridge.");
 		}
 
-		switch (cartGetType())
+		switch (cart_type)
 		{
-			case CART_TYPE_64DRIVE:
+			case CART_CI:
 				dd_setTextPosition(20, 210);
 				dd_setTextColor(255,255,255);
 				dd_printText(FALSE, "64drive detected.");
+				break;
+			case CART_EDX:
+				dd_setTextPosition(20, 210);
+				dd_setTextColor(255,255,255);
+				dd_printText(FALSE, "Everdrive 64 detected.");
 				break;
 			default:
 				dd_setTextPosition(20, 210);

@@ -3,12 +3,13 @@
 #include	<nustd/math.h>
 #include	<nustd/string.h>
 #include	<nustd/stdlib.h>
+#include	<cart.h>
 
 #include	"thread.h"
 #include	"ddtextlib.h"
 
 #include	"leohax.h"
-#include	"cart.h"
+#include	"cartaccess.h"
 #include	"control.h"
 #include	"leoctl.h"
 #include	"64drive.h"
@@ -24,8 +25,7 @@ void mainproc(void *arg)
 
 	initCartPi();
 	
-	detectCart();
-	unlockCartWrite();
+	cart_init();
 
 	initDisk();
 	initController();

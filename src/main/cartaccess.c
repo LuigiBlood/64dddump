@@ -1,5 +1,5 @@
 #include	<ultra64.h>
-#include	"cart.h"
+#include	"cartaccess.h"
 
 //DMA PI
 #define	DMA_QUEUE_SIZE	2
@@ -7,8 +7,6 @@ OSMesgQueue	dmaMessageQ;
 OSMesg		dmaMessageBuf[DMA_QUEUE_SIZE];
 
 OSPiHandle *pi_handle;
-
-s32		cart_type;
 
 void initCartPi()
 {
@@ -18,23 +16,6 @@ void initCartPi()
 	pi_handle = osCartRomInit();
 
 	osCreatePiManager((OSPri)OS_MESG_PRI_NORMAL, &dmaMessageQ, dmaMessageBuf, DMA_QUEUE_SIZE);
-}
-
-void detectCart()
-{
-	cart_type = CART_TYPE_NONE;
-
-	//64drive detection code
-	if (cartRead(D64_CIBASE_ADDRESS + D64_REGISTER_MAGIC) == D64_MAGIC)
-		cart_type = CART_TYPE_64DRIVE;
-}
-
-void unlockCartWrite()
-{
-	if (cart_type == CART_TYPE_64DRIVE)
-	{
-		ciEnableRomWrites();
-	}
 }
 
 //RAM -> Cart
@@ -70,4 +51,9 @@ u32 cartRead(u32 addr)
 	u32 data;
 	osEPiReadIo(pi_handle, addr, &data);
 	return data;
+}
+
+void cartWrite(u32 addr, u32 data)
+{
+	osEPiWriteIo(pi_handle, addr, data);
 }

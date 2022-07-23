@@ -1,6 +1,6 @@
 #include <ultra64.h>
 #include "64drive.h"
-#include "cart.h"
+#include "cartaccess.h"
 
 void ciWait()
 {

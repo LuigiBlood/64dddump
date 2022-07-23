@@ -40,30 +40,36 @@ SECTIONS
       BUILD_DIR/src/process*.o(.text);
       BUILD_DIR/src/ddtextlib*.o(.text);
       BUILD_DIR/src/leo*.o(.text);
+      BUILD_DIR/src/ff*.o(.text);
 
       */libultra_rom.a:*.o(.text);
       */libleo.a:*.o(.text);
       */libnustd.a:*.o(.text);
+      */libcart_ultra.a:*.o(.text);
       */libgcc.a:*.o(.text);
       /* data */
       BUILD_DIR/src/main*.o(.data*);
       BUILD_DIR/src/process*.o(.data*);
       BUILD_DIR/src/ddtextlib*.o(.data*);
       BUILD_DIR/src/leo*.o(.data*);
+      BUILD_DIR/src/ff*.o(.data*);
 
       */libultra_rom.a:*.o(.data*);
       */libleo.a:*.o(.data*);
       */libnustd.a:*.o(.data*);
+      */libcart_ultra.a:*.o(.data*);
 
       /* rodata */
       BUILD_DIR/src/main*.o(.*rodata*);
       BUILD_DIR/src/process*.o(.*rodata*);
       BUILD_DIR/src/ddtextlib*.o(.*rodata*);
       BUILD_DIR/src/leo*.o(.*rodata*);
+      BUILD_DIR/src/ff*.o(.*rodata*);
 
       */libultra_rom.a:*.o(.*rodata*);
       */libleo.a:*.o(.*rodata*);
       */libnustd.a:*.o(.*rodata*);
+      */libcart_ultra.a:*.o(.*rodata*);
       */libgcc.a:*.o(.*rodata*);
    }
    END_SEG(code)
@@ -73,6 +79,7 @@ SECTIONS
       BUILD_DIR/src/process*.o(.*bss*);
       BUILD_DIR/src/ddtextlib*.o(.*bss*);
       BUILD_DIR/src/leo*.o(.*bss*);
+      BUILD_DIR/src/ff*.o(.*bss*);
 
       */libultra_rom.a:*.o(COMMON);
       */libultra_rom.a:*.o(.scommon);
@@ -83,6 +90,9 @@ SECTIONS
       */libnustd.a:*.o(COMMON);
       */libnustd.a:*.o(.scommon);
       */libnustd.a:*.o(.*bss*);
+      */libcart_ultra.a:*.o(COMMON);
+      */libcart_ultra.a:*.o(.scommon);
+      */libcart_ultra.a:*.o(.*bss*);
       . = ALIGN(0x40);
    }
    END_NOLOAD(code)
