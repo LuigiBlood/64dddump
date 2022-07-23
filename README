@@ -1,7 +1,16 @@
-64DD Disk Dumper
-by LuigiBlood & marshallh
+64DD Dump Tool
+by LuigiBlood
 
-Dumps your 64DD disk on 64drive SD/CF card.
+Dumps 64DD Disks, IPL ROM, H8 Controller ROM and EEPROM to the SD Card.
+
+Compatible with:
+- 64drive
+- Everdrive 64 X Series (In development)
 
 This version requires the Modern SDK setup that can be found here:
 https://crashoveride95.github.io/n64hbrew/modernsdk/index.html
+
+As well as libcart here:
+https://github.com/devwizard64/libcart
+
+You can use the Dockerfile for an automated building Docker image for compilation.
