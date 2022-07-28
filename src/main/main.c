@@ -26,6 +26,7 @@ void mainproc(void *arg)
 	initCartPi();
 	
 	cart_init();
+	initFatFs();
 
 	initDisk();
 	initController();

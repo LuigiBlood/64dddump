@@ -8,6 +8,9 @@ OSMesg		dmaMessageBuf[DMA_QUEUE_SIZE];
 
 OSPiHandle *pi_handle;
 
+FATFS FatFs;
+TCHAR DumpPath[256];
+
 void initCartPi()
 {
 	//Create PI Message Queue
@@ -16,6 +19,54 @@ void initCartPi()
 	pi_handle = osCartRomInit();
 
 	osCreatePiManager((OSPri)OS_MESG_PRI_NORMAL, &dmaMessageQ, dmaMessageBuf, DMA_QUEUE_SIZE);
+}
+
+FRESULT initFatFs()
+{
+	//Mount SD Card
+	return f_mount(&FatFs, "", 0);
+}
+
+FRESULT makeUniqueFilename(const TCHAR *path, const TCHAR *ext)
+{
+	FRESULT fr;
+	int num = 0;
+
+	//Path as is
+	sprintf(DumpPath, "%s.%s", path, ext);
+	fr = f_stat(DumpPath, 0);
+	if (fr == FR_NO_FILE) return fr;
+	else if (fr != FR_OK) return fr;
+
+	//Add numbers
+	while (num < 500)
+	{
+		sprintf(DumpPath, "%s_%i.%s", path, num, ext);
+		fr = f_stat(DumpPath, 0);
+		if (fr == FR_NO_FILE) return fr;
+		else if (fr != FR_OK) return fr;
+		num++;
+	}
+}
+
+FRESULT writeFile(const TCHAR *path, const int size, int *proc)
+{
+	FIL fp;
+	FRESULT fr;
+	unsigned int fw;
+
+	*proc = WRITE_ERROR_OK;
+
+	//Write File
+	*proc = WRITE_ERROR_FOPEN;
+	fr = f_open(&fp, path, FA_WRITE | FA_CREATE_ALWAYS);
+	if (fr != FR_OK) return fr;
+	*proc = WRITE_ERROR_FWRITE;
+	fr = f_write(&fp, (void*)0xB0000000, size, &fw);
+	if (fr != FR_OK) return fr;
+	*proc = WRITE_ERROR_FCLOSE;
+	fr = f_close(&fp);
+	return fr;
 }
 
 //RAM -> Cart
