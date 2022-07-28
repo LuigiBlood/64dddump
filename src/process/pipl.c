@@ -24,11 +24,6 @@
 #define PIPL_MODE_SAVE		3
 #define PIPL_MODE_FINISH	8
 
-#define PIPL_ERROR_OK		0
-#define PIPL_ERROR_FOPEN	1
-#define PIPL_ERROR_FWRITE	2
-#define PIPL_ERROR_FCLOSE	3
-
 #define PIPL_SIZE		0x400000
 #define PIPL_BLOCK_SIZE	0x4000
 s32 pipl_dump_offset;
@@ -90,8 +85,8 @@ void pipl_update()
 		pipl_dump_offset += PIPL_BLOCK_SIZE;
 		if (pipl_dump_offset >= PIPL_SIZE)
 		{
-			makeUniqueFilename("/dump/DDIPL", "rom");
 			crc32calc_end();
+			makeUniqueFilename("/dump/DDIPL", "rom");
 			pipl_dump_mode = PIPL_MODE_SAVE;
 		}
 	}
@@ -176,7 +171,7 @@ void pipl_render(s32 fullrender)
 			sprintf(console_text, "%X/%X bytes\nCRC32: %08X\n", pipl_dump_offset, PIPL_SIZE, crc32calc);
 			dd_printText(FALSE, console_text);
 
-			if (pipl_dump_error != PIPL_ERROR_OK)
+			if (pipl_dump_error != WRITE_ERROR_OK)
 			{
 				if (pipl_dump_error == WRITE_ERROR_FOPEN)
 					dd_printText(FALSE, "f_open() Error");
