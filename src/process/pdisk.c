@@ -16,6 +16,9 @@
 #include	"process.h"
 #include	"version.h"
 #include	"pdisk_extra.h"
+#include	"crc32.h"
+
+#include	"ff.h"
 
 #define PDISK_MODE_INIT		0
 #define PDISK_MODE_WAIT		1
@@ -25,7 +28,8 @@
 #define PDISK_MODE_CONF3	5
 #define PDISK_MODE_PREP		6
 #define PDISK_MODE_DUMP		7
-#define PDISK_MODE_FATAL	8
+#define PDISK_MODE_SAVE		8
+#define PDISK_MODE_FATAL	9
 #define PDISK_MODE_FINISH	10
 s32 pdisk_dump_mode;
 
@@ -37,6 +41,9 @@ s32 pdisk_select;		//Currently Selected
 s32 pdisk_select_dump;	//Selected Dump Type
 s32 pdisk_select_retries;	//Amount of retries
 
+s32 pdisk_dump_error;
+FRESULT pdisk_dump_error2;
+
 s32 pdisk_cur_lba;		//Current LBA
 s32 pdisk_drivetype;	//Drive Type
 s32 pdisk_dump_pause;	//is Dump Paused
@@ -46,6 +53,8 @@ s32 pdisk_skip_lba_end;	//Skip LBA End
 
 #define PDISK_ERROR_COUNT_SKIP_MAX	5
 s32 pdisk_error_count_skip;
+
+#define PDISK_DISK_SIZE 0x3DEC800
 
 void pdisk_f_progress(float percent)
 {
@@ -219,8 +228,10 @@ void pdisk_update()
 		bzero(errorData, MAX_P_LBA);
 		osWritebackDCacheAll();
 
+		crc32calc_start();
+
 		//Zero the ROM Area so the skipping process can be even faster and focus on dumping the disk faster
-		for (offset = 0; offset < 0x3DEC800; offset += USR_SECS_PER_BLK*SEC_SIZE_ZONE0)
+		for (offset = 0; offset < PDISK_DISK_SIZE; offset += USR_SECS_PER_BLK*SEC_SIZE_ZONE0)
 		{
 			copyToCartPi(blockData, (char*)offset, USR_SECS_PER_BLK*SEC_SIZE_ZONE0);
 		}
@@ -248,6 +259,7 @@ void pdisk_update()
 			error = diskReadLBA(pdisk_cur_lba);
 			osWritebackDCacheAll();
 			copyToCartPi(blockData, (char*)offset, size);
+			crc32calc_procarray(blockData, size);
 
 			switch (error)
 			{
@@ -334,8 +346,21 @@ void pdisk_update()
 		if (pdisk_cur_lba > MAX_P_LBA)
 		{
 			diskBreakMotor();
-			pdisk_dump_mode = PDISK_MODE_FINISH;
+			crc32calc_end();
+			makeUniqueFilename("/dump/DDDisk", "ndd");
+			pdisk_dump_mode = PDISK_MODE_SAVE;
 		}
+	}
+	else if (pdisk_dump_mode == PDISK_MODE_SAVE)
+	{
+		//Mode: Save to SD Card
+		FRESULT fr;
+		int proc;
+
+		fr = writeFileROM(DumpPath, PDISK_DISK_SIZE, &proc);
+		if (fr != FR_OK) pdisk_dump_error = proc;
+		pdisk_dump_error2 = fr;
+		pdisk_dump_mode = PDISK_MODE_FINISH;
 	}
 	else if (pdisk_dump_mode == PDISK_MODE_FATAL)
 	{
@@ -350,9 +375,6 @@ void pdisk_update()
 	else if (pdisk_dump_mode == PDISK_MODE_FINISH)
 	{
 		//Mode: Dump is done
-
-		//TODO: Write to SD Card
-
 		//Interaction
 		if (readControllerPressed() & A_BUTTON)
 		{
@@ -569,6 +591,31 @@ void pdisk_render(s32 fullrender)
 
 			pdisk_f_progress((pdisk_cur_lba / (float)MAX_P_LBA));
 		}
+		else if (pdisk_dump_mode == PDISK_MODE_SAVE)
+		{
+			dd_setTextColor(255,255,255);
+			dd_setTextPosition(20, 16*4);
+			sprintf(console_text, "%i", MAX_P_LBA);
+			dd_printText(FALSE, console_text);
+
+			dd_setTextPosition(58, 16*4);
+			sprintf(console_text, "/%i blocks\n", MAX_P_LBA);
+			dd_printText(FALSE, console_text);
+
+			if (pdisk_error_count)
+			{
+				dd_setTextColor(255,80,25);
+				dd_setTextPosition(20, 16*5);
+				sprintf(console_text, "%i errors found", pdisk_error_count);
+				dd_printText(FALSE, console_text);
+			}
+
+			dd_setTextPosition(20, 16*6);
+			dd_printText(FALSE, "Saving Disk file as\n");
+			dd_printText(FALSE, DumpPath);
+
+			pdisk_f_progress(1.0f);
+		}
 		else if (pdisk_dump_mode == PDISK_MODE_FATAL)
 		{
 			dd_setTextColor(255,255,255);
@@ -621,6 +668,27 @@ void pdisk_render(s32 fullrender)
 				dd_setTextPosition(20, 16*5);
 				sprintf(console_text, "%i errors found", pdisk_error_count);
 				dd_printText(FALSE, console_text);
+			}
+
+			dd_setTextPosition(20, 16*6);
+			if (pdisk_dump_error != WRITE_ERROR_OK)
+			{
+				if (pdisk_dump_error == WRITE_ERROR_FOPEN)
+					dd_printText(FALSE, "f_open() Error");
+				else if (pdisk_dump_error == WRITE_ERROR_FWRITE)
+					dd_printText(FALSE, "f_write() Error");
+				else if (pdisk_dump_error == WRITE_ERROR_FCLOSE)
+					dd_printText(FALSE, "f_close() Error");
+
+				sprintf(console_text, " %i", pdisk_dump_error2);
+				dd_printText(FALSE, console_text);
+			}
+			else
+			{
+				sprintf(console_text, "CRC32: %08X\n", crc32calc);
+				dd_printText(FALSE, console_text);
+				dd_printText(FALSE, "Disk dumped as\n");
+				dd_printText(FALSE, DumpPath);
 			}
 
 			dd_setTextPosition(20, 16*10);
