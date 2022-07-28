@@ -5,6 +5,7 @@
 
 #include "ff.h"			/* Obtains integer types */
 #include "diskio.h"		/* Declarations of disk functions */
+#include "leoctl.h"		/* 64DD Specific */
 #include <cart.h>
 
 #ifdef _ULTRA64
@@ -156,7 +157,7 @@ DRESULT disk_ioctl (
 
 DWORD get_fattime (void)
 {
-	return 0;
+	return rtcRead();
 }
 
 #endif

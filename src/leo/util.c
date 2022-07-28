@@ -1,8 +1,10 @@
 #include	<ultra64.h>
 #include	<PR/leo.h>
+#include	<nustd/math.h>
 #include	"leohax.h"
 #include	"leoctl.h"
 #include	"asicdrive.h"
+#include	"ff.h"
 
 u32 diskReadRegister(u32 address)
 {
@@ -109,4 +111,15 @@ s32 isRegisterPresent()
 s32 isIPLROMPresent()
 {
 	return iplRead(0x1010) == 0x2129FFF8;
+}
+
+s32 convertBCD(s32 value)
+{
+	s32 ret = 0;
+	s32 i = 0;
+	for (; i < 4; i++)
+	{
+		ret += ((value >> (4 * i)) & 0xF) * pow(10, i);
+	}
+	return ret;
 }

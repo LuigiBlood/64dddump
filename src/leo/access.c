@@ -137,3 +137,29 @@ void registerBlockDump()
 		blockData[i+3] = (tmp >> 0) & 0xFF;
 	}
 }
+
+/* For FatFs - RTC */
+u32 rtcRead()
+{
+	s32 error;
+	LEOCmd _cmdBlk;
+	
+	LeoReadRTC(&_cmdBlk, &diskMsgQ);
+	osRecvMesg(&diskMsgQ, (OSMesg *)&error, OS_MESG_BLOCK);
+
+	if (error == LEO_ERROR_GOOD)
+	{
+		s32 year = convertBCD((_cmdBlk.data.time.yearhi << 8) | _cmdBlk.data.time.yearlo);
+		s32 month = convertBCD(_cmdBlk.data.time.month);
+		s32 day = convertBCD(_cmdBlk.data.time.day);
+		s32 hour = convertBCD(_cmdBlk.data.time.hour);
+		s32 minute = convertBCD(_cmdBlk.data.time.minute);
+		s32 second = convertBCD(_cmdBlk.data.time.second);
+		return (year - 1980) << 25 | month << 21 | day << 16 | hour << 11 | minute << 5 | second >> 1;
+	}
+	else
+	{
+		//YEAR | MONTH | DAY | HOUR | MINUTE | SECOND /2
+		return (2022 - 1980) << 25 | (7) << 21 | (28) << 16 | (22) << 11 | (54) << 5 | (30) >> 1;
+	}
+}

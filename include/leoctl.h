@@ -52,6 +52,8 @@ extern u8 eepromRead(u8 addr);
 extern void eepromBlockRead();
 //-register
 extern void registerBlockDump();
+//-rtc
+extern u32 rtcRead();
 
 //util
 extern u32 diskReadRegister(u32 address);
@@ -66,6 +68,7 @@ extern s32 diskGetDriveType();
 extern u32 diskGetIPLType();
 extern s32 isRegisterPresent();
 extern s32 isIPLROMPresent();
+extern s32 convertBCD(s32 value);
 
 //string
 extern char* diskErrorString(s32 error);
