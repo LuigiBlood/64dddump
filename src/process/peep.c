@@ -14,15 +14,21 @@
 #include	"64drive.h"
 #include	"process.h"
 #include	"version.h"
+#include	"crc32.h"
+
+#include	"ff.h"
 
 #define PEEP_MODE_INIT		0
 #define PEEP_MODE_CONFIRM	1
 #define PEEP_MODE_DUMP		2
+#define PEEP_MODE_SAVE		3
 #define PEEP_MODE_FINISH	8
 
 #define PEEP_SIZE		0x80
 s32 peep_dump_offset;
 s32 peep_dump_mode;
+s32 peep_dump_error;
+FRESULT peep_dump_error2;
 
 void peep_f_progress(float percent)
 {
@@ -47,6 +53,7 @@ void peep_init()
 {
 	peep_dump_offset = 0;
 	peep_dump_mode = PEEP_MODE_INIT;
+	crc32calc_start();
 }
 
 void peep_update()
@@ -71,14 +78,27 @@ void peep_update()
 		eepromBlockRead();
 		osWritebackDCacheAll();
 		copyToCartPi(blockData, (char*)peep_dump_offset, PEEP_SIZE);
+		crc32calc_procarray(blockData, PEEP_SIZE);
 		peep_dump_offset += PEEP_SIZE;
 		if (peep_dump_offset >= PEEP_SIZE)
+		{
+			crc32calc_end();
+			makeUniqueFilename("/dump/DDEEP", "rom");
 			peep_dump_mode = PEEP_MODE_FINISH;
+		}
+	}
+	else if (peep_dump_mode == PEEP_MODE_SAVE)
+	{
+		FRESULT fr;
+		int proc;
+
+		fr = writeFile(DumpPath, PEEP_SIZE, &proc);
+		if (fr != FR_OK) peep_dump_error = proc;
+		peep_dump_error2 = fr;
+		peep_dump_mode = PEEP_MODE_FINISH;
 	}
 	else if (peep_dump_mode == PEEP_MODE_FINISH)
 	{
-		//TODO: Write to SD Card
-
 		//Interaction
 		if (readControllerPressed() & A_BUTTON)
 		{
@@ -130,13 +150,41 @@ void peep_render(s32 fullrender)
 
 			peep_f_progress((peep_dump_offset / (float)PEEP_SIZE));
 		}
-		else if (peep_dump_mode == PEEP_MODE_FINISH)
+		else if (peep_dump_mode == PEEP_MODE_SAVE)
 		{
 			dd_setTextColor(255,255,255);
 			dd_setTextPosition(20, 16*4);
 			sprintf(console_text, "%X/%X bytes\n", peep_dump_offset, PEEP_SIZE);
 			dd_printText(FALSE, console_text);
-			dd_printText(FALSE, "EEPROM Dumped.");
+			dd_printText(FALSE, "Saving EEPROM file as\n");
+			dd_printText(FALSE, DumpPath);
+
+			peep_f_progress((peep_dump_offset / (float)PEEP_SIZE));
+		}
+		else if (peep_dump_mode == PEEP_MODE_FINISH)
+		{
+			dd_setTextColor(255,255,255);
+			dd_setTextPosition(20, 16*4);
+			sprintf(console_text, "%X/%X bytes\nCRC32: %08X\n", peep_dump_offset, PEEP_SIZE, crc32calc);
+			dd_printText(FALSE, console_text);
+			
+			if (peep_dump_error != WRITE_ERROR_OK)
+			{
+				if (peep_dump_error == WRITE_ERROR_FOPEN)
+					dd_printText(FALSE, "f_open() Error");
+				else if (peep_dump_error == WRITE_ERROR_FWRITE)
+					dd_printText(FALSE, "f_write() Error");
+				else if (peep_dump_error == WRITE_ERROR_FCLOSE)
+					dd_printText(FALSE, "f_close() Error");
+
+				sprintf(console_text, " %i", peep_dump_error2);
+				dd_printText(FALSE, console_text);
+			}
+			else
+			{
+				dd_printText(FALSE, "EEPROM Dumped as\n");
+				dd_printText(FALSE, DumpPath);
+			}
 
 			dd_setTextPosition(20, 16*8);
 			dd_setTextColor(255,255,255);
