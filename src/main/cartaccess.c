@@ -55,17 +55,20 @@ FRESULT writeFile(const TCHAR *path, const int size, int *proc)
 	FRESULT fr;
 	unsigned int fw;
 
-	*proc = WRITE_ERROR_OK;
-
 	//Write File
 	*proc = WRITE_ERROR_FOPEN;
 	fr = f_open(&fp, path, FA_WRITE | FA_CREATE_ALWAYS);
 	if (fr != FR_OK) return fr;
+
 	*proc = WRITE_ERROR_FWRITE;
 	fr = f_write(&fp, (void*)0xB0000000, size, &fw);
 	if (fr != FR_OK) return fr;
+	
 	*proc = WRITE_ERROR_FCLOSE;
 	fr = f_close(&fp);
+	if (fr != FR_OK) return fr;
+
+	*proc = WRITE_ERROR_OK;
 	return fr;
 }
 
