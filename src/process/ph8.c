@@ -14,10 +14,14 @@
 #include	"64drive.h"
 #include	"process.h"
 #include	"version.h"
+#include	"crc32.h"
+
+#include	"ff.h"
 
 #define PH8_MODE_INIT		0
 #define PH8_MODE_CONFIRM	1
 #define PH8_MODE_DUMP		2
+#define PH8_MODE_SAVE		3
 #define PH8_MODE_FINISH		8
 
 #define PH8_BASE		0x0000
@@ -25,6 +29,8 @@
 #define PH8_BLOCK_SIZE	0x1000
 s32 ph8_dump_offset;
 s32 ph8_dump_mode;
+s32 ph8_dump_error;
+FRESULT ph8_dump_error2;
 
 void ph8_f_progress(float percent)
 {
@@ -49,6 +55,7 @@ void ph8_init()
 {
 	ph8_dump_offset = 0;
 	ph8_dump_mode = PH8_MODE_INIT;
+	crc32calc_start();
 }
 
 void ph8_update()
@@ -73,14 +80,27 @@ void ph8_update()
 		h8BlockRead(PH8_BASE + ph8_dump_offset);
 		osWritebackDCacheAll();
 		copyToCartPi(blockData, (char*)ph8_dump_offset, PH8_BLOCK_SIZE);
+		crc32calc_procarray(blockData, PH8_BLOCK_SIZE);
 		ph8_dump_offset += PH8_BLOCK_SIZE;
 		if (ph8_dump_offset >= PH8_SIZE)
-			ph8_dump_mode = PH8_MODE_FINISH;
+		{
+			crc32calc_end();
+			makeUniqueFilename("/dump/DDH8", "rom");
+			ph8_dump_mode = PH8_MODE_SAVE;
+		}
+	}
+	else if (ph8_dump_mode == PH8_MODE_SAVE)
+	{
+		FRESULT fr;
+		int proc;
+
+		fr = writeFile(DumpPath, PH8_SIZE, &proc);
+		if (fr != FR_OK) ph8_dump_error = proc;
+		ph8_dump_error2 = fr;
+		ph8_dump_mode = PH8_MODE_FINISH;
 	}
 	else if (ph8_dump_mode == PH8_MODE_FINISH)
 	{
-		//TODO: Write to SD Card
-
 		//Interaction
 		if (readControllerPressed() & A_BUTTON)
 		{
@@ -132,13 +152,41 @@ void ph8_render(s32 fullrender)
 
 			ph8_f_progress((ph8_dump_offset / (float)PH8_SIZE));
 		}
-		else if (ph8_dump_mode == PH8_MODE_FINISH)
+		else if (ph8_dump_mode == PH8_MODE_SAVE)
 		{
 			dd_setTextColor(255,255,255);
 			dd_setTextPosition(20, 16*4);
 			sprintf(console_text, "%X/%X bytes\n", ph8_dump_offset, PH8_SIZE);
 			dd_printText(FALSE, console_text);
-			dd_printText(FALSE, "H8 ROM Dumped.");
+			dd_printText(FALSE, "Saving H8 ROM file as\n");
+			dd_printText(FALSE, DumpPath);
+
+			ph8_f_progress((ph8_dump_offset / (float)PH8_SIZE));
+		}
+		else if (ph8_dump_mode == PH8_MODE_FINISH)
+		{
+			dd_setTextColor(255,255,255);
+			dd_setTextPosition(20, 16*4);
+			sprintf(console_text, "%X/%X bytes\nCRC32: %08X\n", ph8_dump_offset, PH8_SIZE, crc32calc);
+			dd_printText(FALSE, console_text);
+
+			if (ph8_dump_error != WRITE_ERROR_OK)
+			{
+				if (ph8_dump_error == WRITE_ERROR_FOPEN)
+					dd_printText(FALSE, "f_open() Error");
+				else if (ph8_dump_error == WRITE_ERROR_FWRITE)
+					dd_printText(FALSE, "f_write() Error");
+				else if (ph8_dump_error == WRITE_ERROR_FCLOSE)
+					dd_printText(FALSE, "f_close() Error");
+
+				sprintf(console_text, " %i", ph8_dump_error2);
+				dd_printText(FALSE, console_text);
+			}
+			else
+			{
+				dd_printText(FALSE, "H8 ROM Dumped as\n");
+				dd_printText(FALSE, DumpPath);
+			}
 
 			dd_setTextPosition(20, 16*8);
 			dd_setTextColor(255,255,255);
