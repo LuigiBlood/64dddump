@@ -92,7 +92,7 @@ void peep_update()
 		FRESULT fr;
 		int proc;
 
-		fr = writeFile(DumpPath, PEEP_SIZE, &proc);
+		fr = writeFileRAM(blockData, DumpPath, PEEP_SIZE, &proc);
 		if (fr != FR_OK) peep_dump_error = proc;
 		peep_dump_error2 = fr;
 		peep_dump_mode = PEEP_MODE_FINISH;

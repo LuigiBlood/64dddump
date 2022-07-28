@@ -49,7 +49,7 @@ FRESULT makeUniqueFilename(const TCHAR *path, const TCHAR *ext)
 	}
 }
 
-FRESULT writeFile(const TCHAR *path, const int size, int *proc)
+FRESULT writeFileROM(const TCHAR *path, const int size, int *proc)
 {
 	FIL fp;
 	FRESULT fr;
@@ -63,7 +63,30 @@ FRESULT writeFile(const TCHAR *path, const int size, int *proc)
 	*proc = WRITE_ERROR_FWRITE;
 	fr = f_write(&fp, (void*)0xB0000000, size, &fw);
 	if (fr != FR_OK) return fr;
-	
+
+	*proc = WRITE_ERROR_FCLOSE;
+	fr = f_close(&fp);
+	if (fr != FR_OK) return fr;
+
+	*proc = WRITE_ERROR_OK;
+	return fr;
+}
+
+FRESULT writeFileRAM(const void *ram, const TCHAR *path, const int size, int *proc)
+{
+	FIL fp;
+	FRESULT fr;
+	unsigned int fw;
+
+	//Write File
+	*proc = WRITE_ERROR_FOPEN;
+	fr = f_open(&fp, path, FA_WRITE | FA_CREATE_ALWAYS);
+	if (fr != FR_OK) return fr;
+
+	*proc = WRITE_ERROR_FWRITE;
+	fr = f_write(&fp, ram, size, &fw);
+	if (fr != FR_OK) return fr;
+
 	*proc = WRITE_ERROR_FCLOSE;
 	fr = f_close(&fp);
 	if (fr != FR_OK) return fr;

@@ -18,7 +18,8 @@ extern TCHAR DumpPath[256];
 extern void initCartPi();
 extern FRESULT initFatFs();
 extern FRESULT makeUniqueFilename(const TCHAR *path, const TCHAR *ext);
-extern FRESULT writeFile(const TCHAR *path, const int size, int *proc);
+extern FRESULT writeFileROM(const TCHAR *path, const int size, int *proc);
+extern FRESULT writeFileRAM(const void *ram, const TCHAR *path, const int size, int *proc);
 
 extern void copyToCartPi(char *src, char *dest, const int len);
 extern void copyFromCartPi(char *src, char *dest, const int len);

@@ -49,6 +49,15 @@ u32 crc32calc_procarray(const u8 *input, s32 size)
 	}
 }
 
+u32 crc32calc_procfill(const u8 input, s32 size)
+{
+	s32 i = 0;
+	for (; i < size; i++) {
+		crc32calc ^= input;
+		crc32calc = crc32_for_byte(crc32calc);
+	}
+}
+
 u32 crc32calc_end()
 {
 	crc32calc = ~crc32calc;

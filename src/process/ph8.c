@@ -94,7 +94,7 @@ void ph8_update()
 		FRESULT fr;
 		int proc;
 
-		fr = writeFile(DumpPath, PH8_SIZE, &proc);
+		fr = writeFileROM(DumpPath, PH8_SIZE, &proc);
 		if (fr != FR_OK) ph8_dump_error = proc;
 		ph8_dump_error2 = fr;
 		ph8_dump_mode = PH8_MODE_FINISH;

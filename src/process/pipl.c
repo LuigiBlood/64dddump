@@ -95,7 +95,7 @@ void pipl_update()
 		FRESULT fr;
 		int proc;
 
-		fr = writeFile(DumpPath, PIPL_SIZE, &proc);
+		fr = writeFileROM(DumpPath, PIPL_SIZE, &proc);
 		if (fr != FR_OK) pipl_dump_error = proc;
 		pipl_dump_error2 = fr;
 		pipl_dump_mode = PIPL_MODE_FINISH;
