@@ -17,6 +17,7 @@
 #include	"version.h"
 #include	"pdisk_extra.h"
 #include	"crc32.h"
+#include	"global.h"
 
 #include	"ff.h"
 
@@ -31,7 +32,7 @@
 #define PDISK_MODE_SAVE		8
 #define PDISK_MODE_FATAL	9
 #define PDISK_MODE_FINISH	10
-s32 pdisk_dump_mode;
+//s32 pdisk_dump_mode;
 
 #define PDISK_SELECT2_MIN	0
 #define PDISK_SELECT2_MAX	2
@@ -41,8 +42,8 @@ s32 pdisk_select;		//Currently Selected
 s32 pdisk_select_dump;	//Selected Dump Type
 s32 pdisk_select_retries;	//Amount of retries
 
-s32 pdisk_dump_error;
-FRESULT pdisk_dump_error2;
+//s32 pdisk_dump_error;
+//FRESULT pdisk_dump_error2;
 
 s32 pdisk_cur_lba;		//Current LBA
 s32 pdisk_drivetype;	//Drive Type
@@ -78,7 +79,9 @@ void pdisk_f_progress(float percent)
 void pdisk_init()
 {
 	pdisk_drivetype = diskGetDriveType();
-	pdisk_dump_mode = PDISK_MODE_INIT;
+	proc_sub_dump_mode = PDISK_MODE_INIT;
+	proc_sub_dump_error = 0;
+	proc_sub_dump_error2 = FR_OK;
 	pdisk_skip_lba_end = -1;
 	
 	bzero(blockData, USR_SECS_PER_BLK*SEC_SIZE_ZONE0);
@@ -87,16 +90,16 @@ void pdisk_init()
 
 void pdisk_update()
 {
-	if (pdisk_dump_mode == PDISK_MODE_INIT)
+	if (proc_sub_dump_mode == PDISK_MODE_INIT)
 	{
-		pdisk_dump_mode = PDISK_MODE_WAIT;
+		proc_sub_dump_mode = PDISK_MODE_WAIT;
 	}
-	else if (pdisk_dump_mode == PDISK_MODE_WAIT)
+	else if (proc_sub_dump_mode == PDISK_MODE_WAIT)
 	{
 		//Mode: Wait for Disk inserted in the drive.
 
 		//Check for Disk presence, reset when disk is ejected
-		if (isDiskPresent()) pdisk_dump_mode = PDISK_MODE_CHECK;
+		if (isDiskPresent()) proc_sub_dump_mode = PDISK_MODE_CHECK;
 
 		//Press B Button to quit
 		if (readControllerPressed() & B_BUTTON)
@@ -104,32 +107,32 @@ void pdisk_update()
 			process_change(PROCMODE_PMAIN);
 		}
 	}
-	else if (pdisk_dump_mode == PDISK_MODE_CHECK)
+	else if (proc_sub_dump_mode == PDISK_MODE_CHECK)
 	{
 		//Mode: Checking the Disk Info
 
 		//Check for Disk presence, reset when disk is ejected
-		if (!isDiskPresent()) pdisk_dump_mode = PDISK_MODE_WAIT;
+		if (!isDiskPresent()) proc_sub_dump_mode = PDISK_MODE_WAIT;
 
 		//Read Disk ID would do a bunch of checks on top
 		//TODO: What to do when this fails
 		if (diskReadID() == LEO_STATUS_GOOD)
 		{
-			pdisk_dump_mode = PDISK_MODE_CONF1;
+			proc_sub_dump_mode = PDISK_MODE_CONF1;
 			pdisk_e_checkbounds();
 		}
 	}
-	else if (pdisk_dump_mode == PDISK_MODE_CONF1)
+	else if (proc_sub_dump_mode == PDISK_MODE_CONF1)
 	{
 		//Mode: Show Disk Info
 
 		//Check for Disk presence, reset when disk is ejected
-		if (!isDiskPresent()) pdisk_dump_mode = PDISK_MODE_WAIT;
+		if (!isDiskPresent()) proc_sub_dump_mode = PDISK_MODE_WAIT;
 
 		//Press A Button to continue
 		if (readControllerPressed() & A_BUTTON)
 		{
-			pdisk_dump_mode = PDISK_MODE_CONF2;
+			proc_sub_dump_mode = PDISK_MODE_CONF2;
 			pdisk_select = 0;
 			if (pdisk_drivetype != LEO_DRIVE_TYPE_RETAIL) pdisk_select = 1;
 		}
@@ -139,12 +142,12 @@ void pdisk_update()
 			process_change(PROCMODE_PMAIN);
 		}
 	}
-	else if (pdisk_dump_mode == PDISK_MODE_CONF2)
+	else if (proc_sub_dump_mode == PDISK_MODE_CONF2)
 	{
 		//Mode: Menu for Dump Type (Skip, Full, Full Fast)
 
 		//Check for Disk presence, reset when disk is ejected
-		if (!isDiskPresent()) pdisk_dump_mode = PDISK_MODE_WAIT;
+		if (!isDiskPresent()) proc_sub_dump_mode = PDISK_MODE_WAIT;
 
 		//Selection
 		if (readControllerPressed() & U_JPAD)
@@ -165,11 +168,11 @@ void pdisk_update()
 		//Press A Button to start dump
 		if (readControllerPressed() & A_BUTTON)
 		{
-			pdisk_dump_mode = PDISK_MODE_PREP;
+			proc_sub_dump_mode = PDISK_MODE_PREP;
 			pdisk_select_dump = pdisk_select;
 			pdisk_select_retries = 0;
 			if (pdisk_select == 2)
-				pdisk_dump_mode = PDISK_MODE_CONF3;
+				proc_sub_dump_mode = PDISK_MODE_CONF3;
 		}
 		//Press B Button to quit
 		if (readControllerPressed() & B_BUTTON)
@@ -177,12 +180,12 @@ void pdisk_update()
 			process_change(PROCMODE_PMAIN);
 		}
 	}
-	else if (pdisk_dump_mode == PDISK_MODE_CONF3)
+	else if (proc_sub_dump_mode == PDISK_MODE_CONF3)
 	{
 		//Mode: Menu for Dump Type (32, 16, 8)
 
 		//Check for Disk presence, reset when disk is ejected
-		if (!isDiskPresent()) pdisk_dump_mode = PDISK_MODE_WAIT;
+		if (!isDiskPresent()) proc_sub_dump_mode = PDISK_MODE_WAIT;
 
 		//Selection
 		if (readControllerPressed() & U_JPAD)
@@ -200,22 +203,22 @@ void pdisk_update()
 		//Press A Button to start dump
 		if (readControllerPressed() & A_BUTTON)
 		{
-			pdisk_dump_mode = PDISK_MODE_PREP;
+			proc_sub_dump_mode = PDISK_MODE_PREP;
 			pdisk_select_retries = pdisk_select;
 		}
 		//Press B Button to go back a menu
 		if (readControllerPressed() & B_BUTTON)
 		{
-			pdisk_dump_mode = PDISK_MODE_CONF2;
+			proc_sub_dump_mode = PDISK_MODE_CONF2;
 			pdisk_select = 0;
 		}
 	}
-	else if (pdisk_dump_mode == PDISK_MODE_PREP)
+	else if (proc_sub_dump_mode == PDISK_MODE_PREP)
 	{
 		//Mode: Prepare Dump
 		s32 offset;
 
-		pdisk_dump_mode = PDISK_MODE_DUMP;
+		proc_sub_dump_mode = PDISK_MODE_DUMP;
 		pdisk_cur_lba = 0;
 		pdisk_dump_pause = 0;
 		pdisk_error_count = 0;
@@ -236,7 +239,7 @@ void pdisk_update()
 			copyToCartPi(blockData, (char*)offset, USR_SECS_PER_BLK*SEC_SIZE_ZONE0);
 		}
 	}
-	else if (pdisk_dump_mode == PDISK_MODE_DUMP)
+	else if (proc_sub_dump_mode == PDISK_MODE_DUMP)
 	{
 		//Mode: Dump Mode Process
 		if (readControllerPressed() & START_BUTTON)
@@ -274,7 +277,7 @@ void pdisk_update()
 				case LEO_SENSE_MEDIUM_MAY_HAVE_CHANGED:
 				case LEO_SENSE_EJECTED_ILLEGALLY_RESUME:
 					pdisk_error_fatal = error;
-					pdisk_dump_mode = PDISK_MODE_FATAL;
+					proc_sub_dump_mode = PDISK_MODE_FATAL;
 					diskBreakMotor();
 					break;
 				case LEO_SENSE_GOOD:
@@ -348,21 +351,21 @@ void pdisk_update()
 			diskBreakMotor();
 			crc32calc_end();
 			makeUniqueFilename("/dump/DDDisk", "ndd");
-			pdisk_dump_mode = PDISK_MODE_SAVE;
+			proc_sub_dump_mode = PDISK_MODE_SAVE;
 		}
 	}
-	else if (pdisk_dump_mode == PDISK_MODE_SAVE)
+	else if (proc_sub_dump_mode == PDISK_MODE_SAVE)
 	{
 		//Mode: Save to SD Card
 		FRESULT fr;
 		int proc;
 
 		fr = writeFileROM(DumpPath, PDISK_DISK_SIZE, &proc);
-		if (fr != FR_OK) pdisk_dump_error = proc;
-		pdisk_dump_error2 = fr;
-		pdisk_dump_mode = PDISK_MODE_FINISH;
+		if (fr != FR_OK) proc_sub_dump_error = proc;
+		proc_sub_dump_error2 = fr;
+		proc_sub_dump_mode = PDISK_MODE_FINISH;
 	}
-	else if (pdisk_dump_mode == PDISK_MODE_FATAL)
+	else if (proc_sub_dump_mode == PDISK_MODE_FATAL)
 	{
 		//Mode: Fatal Error
 		
@@ -372,7 +375,7 @@ void pdisk_update()
 			process_change(PROCMODE_PMAIN);
 		}
 	}
-	else if (pdisk_dump_mode == PDISK_MODE_FINISH)
+	else if (proc_sub_dump_mode == PDISK_MODE_FINISH)
 	{
 		//Mode: Dump is done
 		//Interaction
@@ -399,7 +402,7 @@ void pdisk_render(s32 fullrender)
 		dd_setTextColor(255,0,255);
 		dd_printText(FALSE, "Dump Disk Mode\n");
 
-		if (pdisk_dump_mode == PDISK_MODE_WAIT)
+		if (proc_sub_dump_mode == PDISK_MODE_WAIT)
 		{
 			dd_setTextColor(255,255,255);
 			dd_setTextPosition(20, 16*4);
@@ -413,13 +416,13 @@ void pdisk_render(s32 fullrender)
 			dd_setTextColor(255,255,255);
 			dd_printText(FALSE, " to return to menu.");
 		}
-		else if (pdisk_dump_mode == PDISK_MODE_CHECK)
+		else if (proc_sub_dump_mode == PDISK_MODE_CHECK)
 		{
 			dd_setTextColor(255,255,255);
 			dd_setTextPosition(20, 16*4);
 			dd_printText(FALSE, "Checking the disk...\n");
 		}
-		else if (pdisk_dump_mode == PDISK_MODE_CONF1)
+		else if (proc_sub_dump_mode == PDISK_MODE_CONF1)
 		{
 			dd_setTextColor(255,255,255);
 			dd_setTextPosition(20, 16*4);
@@ -457,7 +460,7 @@ void pdisk_render(s32 fullrender)
 			dd_setTextColor(255,255,255);
 			dd_printText(FALSE, " to return to menu.");
 		}
-		else if (pdisk_dump_mode == PDISK_MODE_CONF2)
+		else if (proc_sub_dump_mode == PDISK_MODE_CONF2)
 		{
 			dd_setTextColor(255,255,255);
 			dd_setTextPosition(20, 16*4);
@@ -484,7 +487,7 @@ void pdisk_render(s32 fullrender)
 			else if (pdisk_select == 1) dd_printText(TRUE, "\nDumps the entire disk data and\nbruteforces through bad blocks.");
 			else if (pdisk_select == 2) dd_printText(TRUE, "Dumps the entire disk data and\nbruteforces through bad blocks,\nallows to lower repeated error reads.");
 		}
-		else if (pdisk_dump_mode == PDISK_MODE_CONF3)
+		else if (proc_sub_dump_mode == PDISK_MODE_CONF3)
 		{
 			dd_setTextColor(255,255,255);
 			dd_setTextPosition(20, 16*4);
@@ -513,13 +516,13 @@ void pdisk_render(s32 fullrender)
 			if (pdisk_select == 0) dd_printText(TRUE, "\nThe default amount of retries\nper bad block.");
 			else dd_printText(TRUE, "Reduces the amount of retries\nand time per bad block.\nLowers accuracy.");
 		}
-		else if (pdisk_dump_mode == PDISK_MODE_PREP)
+		else if (proc_sub_dump_mode == PDISK_MODE_PREP)
 		{
 			dd_setTextColor(255,255,255);
 			dd_setTextPosition(20, 16*4);
 			dd_printText(FALSE, "Preparing dump process...\n(Zero the ROM Area data)");
 		}
-		else if (pdisk_dump_mode == PDISK_MODE_DUMP)
+		else if (proc_sub_dump_mode == PDISK_MODE_DUMP)
 		{
 			dd_setTextColor(255,255,255);
 			dd_setTextPosition(20, 16*4);
@@ -591,7 +594,7 @@ void pdisk_render(s32 fullrender)
 
 			pdisk_f_progress((pdisk_cur_lba / (float)MAX_P_LBA));
 		}
-		else if (pdisk_dump_mode == PDISK_MODE_SAVE)
+		else if (proc_sub_dump_mode == PDISK_MODE_SAVE)
 		{
 			dd_setTextColor(255,255,255);
 			dd_setTextPosition(20, 16*4);
@@ -616,7 +619,7 @@ void pdisk_render(s32 fullrender)
 
 			pdisk_f_progress(1.0f);
 		}
-		else if (pdisk_dump_mode == PDISK_MODE_FATAL)
+		else if (proc_sub_dump_mode == PDISK_MODE_FATAL)
 		{
 			dd_setTextColor(255,255,255);
 			dd_setTextPosition(20, 16*4);
@@ -651,7 +654,7 @@ void pdisk_render(s32 fullrender)
 
 			pdisk_f_progress((pdisk_cur_lba / (float)MAX_P_LBA));
 		}
-		else if (pdisk_dump_mode == PDISK_MODE_FINISH)
+		else if (proc_sub_dump_mode == PDISK_MODE_FINISH)
 		{
 			dd_setTextColor(255,255,255);
 			dd_setTextPosition(20, 16*4);
@@ -671,16 +674,16 @@ void pdisk_render(s32 fullrender)
 			}
 
 			dd_setTextPosition(20, 16*6);
-			if (pdisk_dump_error != WRITE_ERROR_OK)
+			if (proc_sub_dump_error != WRITE_ERROR_OK)
 			{
-				if (pdisk_dump_error == WRITE_ERROR_FOPEN)
+				if (proc_sub_dump_error == WRITE_ERROR_FOPEN)
 					dd_printText(FALSE, "f_open() Error");
-				else if (pdisk_dump_error == WRITE_ERROR_FWRITE)
+				else if (proc_sub_dump_error == WRITE_ERROR_FWRITE)
 					dd_printText(FALSE, "f_write() Error");
-				else if (pdisk_dump_error == WRITE_ERROR_FCLOSE)
+				else if (proc_sub_dump_error == WRITE_ERROR_FCLOSE)
 					dd_printText(FALSE, "f_close() Error");
 
-				sprintf(console_text, " %i", pdisk_dump_error2);
+				sprintf(console_text, " %i", proc_sub_dump_error2);
 				dd_printText(FALSE, console_text);
 			}
 			else

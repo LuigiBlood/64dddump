@@ -1,0 +1,8 @@
+#ifndef _global_h_
+#define _global_h_
+
+extern s32 proc_sub_dump_mode;
+extern s32 proc_sub_dump_error;
+extern FRESULT proc_sub_dump_error2;
+
+#endif

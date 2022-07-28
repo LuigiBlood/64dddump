@@ -15,6 +15,7 @@
 #include	"process.h"
 #include	"version.h"
 #include	"crc32.h"
+#include	"global.h"
 
 #include	"ff.h"
 
@@ -27,9 +28,9 @@
 #define PIPL_SIZE		0x400000
 #define PIPL_BLOCK_SIZE	0x4000
 s32 pipl_dump_offset;
-s32 pipl_dump_mode;
-s32 pipl_dump_error;
-FRESULT pipl_dump_error2;
+//s32 pipl_dump_mode;
+//s32 pipl_dump_error;
+//FRESULT pipl_dump_error2;
 
 void pipl_f_progress(float percent)
 {
@@ -53,19 +54,19 @@ void pipl_f_progress(float percent)
 void pipl_init()
 {
 	pipl_dump_offset = 0;
-	pipl_dump_mode = PIPL_MODE_INIT;
-	pipl_dump_error = 0;
-	pipl_dump_error2 = FR_OK;
+	proc_sub_dump_mode = PIPL_MODE_INIT;
+	proc_sub_dump_error = 0;
+	proc_sub_dump_error2 = FR_OK;
 	crc32calc_start();
 }
 
 void pipl_update()
 {
-	if (pipl_dump_mode == PIPL_MODE_INIT)
+	if (proc_sub_dump_mode == PIPL_MODE_INIT)
 	{
-		pipl_dump_mode = PIPL_MODE_CONFIRM;
+		proc_sub_dump_mode = PIPL_MODE_CONFIRM;
 	}
-	else if (pipl_dump_mode == PIPL_MODE_CONFIRM)
+	else if (proc_sub_dump_mode == PIPL_MODE_CONFIRM)
 	{
 		if (readControllerPressed() & B_BUTTON)
 		{
@@ -73,10 +74,10 @@ void pipl_update()
 		}
 		if (readControllerPressed() & A_BUTTON)
 		{
-			pipl_dump_mode = PIPL_MODE_DUMP;
+			proc_sub_dump_mode = PIPL_MODE_DUMP;
 		}
 	}
-	else if (pipl_dump_mode == PIPL_MODE_DUMP)
+	else if (proc_sub_dump_mode == PIPL_MODE_DUMP)
 	{
 		iplBlockRead(pipl_dump_offset);
 		osWritebackDCacheAll();
@@ -87,20 +88,20 @@ void pipl_update()
 		{
 			crc32calc_end();
 			makeUniqueFilename("/dump/DDIPL", "rom");
-			pipl_dump_mode = PIPL_MODE_SAVE;
+			proc_sub_dump_mode = PIPL_MODE_SAVE;
 		}
 	}
-	else if (pipl_dump_mode == PIPL_MODE_SAVE)
+	else if (proc_sub_dump_mode == PIPL_MODE_SAVE)
 	{
 		FRESULT fr;
 		int proc;
 
 		fr = writeFileROM(DumpPath, PIPL_SIZE, &proc);
-		if (fr != FR_OK) pipl_dump_error = proc;
-		pipl_dump_error2 = fr;
-		pipl_dump_mode = PIPL_MODE_FINISH;
+		if (fr != FR_OK) proc_sub_dump_error = proc;
+		proc_sub_dump_error2 = fr;
+		proc_sub_dump_mode = PIPL_MODE_FINISH;
 	}
-	else if (pipl_dump_mode == PIPL_MODE_FINISH)
+	else if (proc_sub_dump_mode == PIPL_MODE_FINISH)
 	{
 		//Interaction
 		if (readControllerPressed() & A_BUTTON)
@@ -126,7 +127,7 @@ void pipl_render(s32 fullrender)
 		dd_setTextColor(255,255,0);
 		dd_printText(FALSE, "Dump IPL ROM Mode\n");
 
-		if (pipl_dump_mode == PIPL_MODE_CONFIRM)
+		if (proc_sub_dump_mode == PIPL_MODE_CONFIRM)
 		{
 			dd_setTextPosition(20, 16*7);
 			dd_setTextColor(255,255,255);
@@ -144,7 +145,7 @@ void pipl_render(s32 fullrender)
 			dd_setTextColor(255,255,255);
 			dd_printText(FALSE, " to return to menu.");
 		}
-		else if (pipl_dump_mode == PIPL_MODE_DUMP)
+		else if (proc_sub_dump_mode == PIPL_MODE_DUMP)
 		{
 			dd_setTextColor(255,255,255);
 			dd_setTextPosition(20, 16*4);
@@ -153,7 +154,7 @@ void pipl_render(s32 fullrender)
 
 			pipl_f_progress((pipl_dump_offset / (float)PIPL_SIZE));
 		}
-		else if (pipl_dump_mode == PIPL_MODE_SAVE)
+		else if (proc_sub_dump_mode == PIPL_MODE_SAVE)
 		{
 			dd_setTextColor(255,255,255);
 			dd_setTextPosition(20, 16*4);
@@ -164,23 +165,23 @@ void pipl_render(s32 fullrender)
 
 			pipl_f_progress((pipl_dump_offset / (float)PIPL_SIZE));
 		}
-		else if (pipl_dump_mode == PIPL_MODE_FINISH)
+		else if (proc_sub_dump_mode == PIPL_MODE_FINISH)
 		{
 			dd_setTextColor(255,255,255);
 			dd_setTextPosition(20, 16*4);
 			sprintf(console_text, "%X/%X bytes\nCRC32: %08X\n", pipl_dump_offset, PIPL_SIZE, crc32calc);
 			dd_printText(FALSE, console_text);
 
-			if (pipl_dump_error != WRITE_ERROR_OK)
+			if (proc_sub_dump_error != WRITE_ERROR_OK)
 			{
-				if (pipl_dump_error == WRITE_ERROR_FOPEN)
+				if (proc_sub_dump_error == WRITE_ERROR_FOPEN)
 					dd_printText(FALSE, "f_open() Error");
-				else if (pipl_dump_error == WRITE_ERROR_FWRITE)
+				else if (proc_sub_dump_error == WRITE_ERROR_FWRITE)
 					dd_printText(FALSE, "f_write() Error");
-				else if (pipl_dump_error == WRITE_ERROR_FCLOSE)
+				else if (proc_sub_dump_error == WRITE_ERROR_FCLOSE)
 					dd_printText(FALSE, "f_close() Error");
 
-				sprintf(console_text, " %i", pipl_dump_error2);
+				sprintf(console_text, " %i", proc_sub_dump_error2);
 				dd_printText(FALSE, console_text);
 			}
 			else
