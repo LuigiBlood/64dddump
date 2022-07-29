@@ -13,6 +13,7 @@
  *		Thread ID for debugging
  */
 #define	TID_IDLE		1
+#define	TID_FAULTPROC		2
 #define	TID_MAINPROC		3
 
 #endif

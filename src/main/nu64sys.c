@@ -25,6 +25,13 @@ static	OSThread	idleThread;
 static	u64		idleThreadStack[STACKSIZE/8];
 
 /*
+ *		FAULT thread
+ */
+extern	void		faultproc(void *);
+static	OSThread	faultThread;
+static	u64		faultThreadStack[STACKSIZE/8];
+
+/*
  *		MAIN thread
  */
 extern	void		mainproc(void *);
@@ -67,6 +74,14 @@ static void	idle(void *arg)
    */
   osCreateMesgQueue(&retraceMessageQ, &retraceMessageBuf, 1);
   osViSetEvent(&retraceMessageQ, NULL, 1);			/* retrace */
+
+  /* 
+   *		Create & start FAULT thread
+   */  
+  osCreateThread(&faultThread, TID_FAULTPROC, faultproc, (void *)0,
+		 (void *)(faultThreadStack+STACKSIZE/8), OS_PRIORITY_APPMAX);
+  
+  osStartThread(&faultThread);
 
   /* 
    *		Create & start MAINPROC thread
