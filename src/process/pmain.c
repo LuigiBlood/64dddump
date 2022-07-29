@@ -17,7 +17,7 @@
 #include	"version.h"
 
 #define PMAIN_SELECT_MIN	0
-#define PMAIN_SELECT_MAX	3
+#define PMAIN_SELECT_MAX	4
 s32 drivetype;
 s32 select;
 s32 iplrompresent;
@@ -146,5 +146,10 @@ void pmain_render(s32 fullrender)
 		else if (drivetype < LEO_DRIVE_TYPE_RETAIL) dd_setTextColor(128,25,25);
 		else dd_setTextColor(25,25,25);
 		dd_printText(TRUE, "Dump EEPROM\n");
+
+		if (select == 4) dd_setTextColor(0,255,0);
+		else if (drivetype < LEO_DRIVE_TYPE_RETAIL) dd_setTextColor(128,25,25);
+		else dd_setTextColor(25,25,25);
+		dd_printText(TRUE, "Dump Registers\n");
 	}
 }

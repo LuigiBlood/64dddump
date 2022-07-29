@@ -63,6 +63,9 @@ void process_init(s32 mode)
 		case PROCMODE_PEEP:
 			peep_init();
 			break;
+		case PROCMODE_PREG:
+			preg_init();
+			break;
 	}
 }
 
@@ -86,6 +89,9 @@ void process_update()
 		case PROCMODE_PEEP:
 			peep_update();
 			break;
+		case PROCMODE_PREG:
+			preg_update();
+			break;
 	}
 }
 
@@ -108,6 +114,9 @@ void process_render(s32 fullrender)
 			break;
 		case PROCMODE_PEEP:
 			peep_render(fullrender);
+			break;
+		case PROCMODE_PREG:
+			preg_render(fullrender);
 			break;
 	}
 }

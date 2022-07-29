@@ -9,7 +9,7 @@
 #define PROCMODE_PIPL	2
 #define PROCMODE_PH8	3
 #define PROCMODE_PEEP	4
-#define PROCMODE_PCONF	5
+#define PROCMODE_PREG	5
 
 //Main Process
 extern void process_first(s32 mode);
@@ -44,5 +44,10 @@ extern void ph8_render(s32 fullrender);
 extern void peep_init();
 extern void peep_update();
 extern void peep_render(s32 fullrender);
+
+//preg
+extern void preg_init();
+extern void preg_update();
+extern void preg_render(s32 fullrender);
 
 #endif
