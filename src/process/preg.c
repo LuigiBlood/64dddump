@@ -48,7 +48,7 @@ void preg_f_progress(float percent)
 	dd_setTextPosition(150, (16*12)-3);
 	dd_setTextColor(255,80,0);
 	dd_printText(FALSE, console_text);
-	dd_printChar(FALSE, '%');
+	dd_printChar(FALSE, 0, '%');
 }
 
 void preg_init()

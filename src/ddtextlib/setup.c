@@ -6,7 +6,7 @@
 s32 cur_framebuffer;
 
 //Initialize Screen
-void dd_initText(u8 font)
+void dd_initText()
 {
 	u32 mode = RESOLUTION;
 	u32 i;
@@ -37,8 +37,6 @@ void dd_initText(u8 font)
 		*r1++ = dd_bg_color;
 		*r2++ = dd_bg_color;
 	}
-	
-	dd_loadTextFont(font);
 }
 
 void dd_swapBuffer()
@@ -57,18 +55,21 @@ void dd_swapBuffer()
 }
 
 //Preload ASCII Text Font into buffer
-void dd_loadTextFont(u8 f)
+void dd_loadTextFont(s32 id, u8 f)
 {
 	int dummy, i;
 	int fnt_start, fnt_end, fnt_size;
-	dd_ascii_font = f * 0xC0;
 
-	fnt_start = LeoGetAAdr(dd_ascii_font, &dummy, &dummy, &dummy);
-	fnt_end = LeoGetAAdr(dd_ascii_font + 0xC0, &dummy, &dummy, &dummy);
+	if (id >= FONT_CACHE_AMOUNT) return;
+
+	dd_afont[id] = f * 0xC0;
+
+	fnt_start = LeoGetAAdr(dd_afont[id], &dummy, &dummy, &dummy);
+	fnt_end = LeoGetAAdr(dd_afont[id] + 0xC0, &dummy, &dummy, &dummy);
 	fnt_size = fnt_end - fnt_start;
 
-	dd_ascii_font_diff = fnt_start;
+	dd_afont_diff[id] = fnt_start;
 
 	osWritebackDCacheAll();
-	copyFromCartPi(_ddfontSegmentRomStart + fnt_start, dd_afont_data, 0x3000);
+	copyFromCartPi(_ddfontSegmentRomStart + fnt_start, dd_afont_data + (0x3000 * id), 0x3000);
 }

@@ -20,7 +20,9 @@ s32 proc_mode_next;
 //Initialize Main Process
 void process_first(s32 mode)
 {
-	dd_initText(4);
+	dd_initText();
+	dd_loadTextFont(0, 4);
+	dd_loadTextFont(1, 10);
 
 	process_change(mode);
 	process_init(mode);

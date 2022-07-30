@@ -16,10 +16,12 @@ extern u8 _ddfontSegmentRomStart[];
 //Variables
 extern u16 dd_color;
 extern u16 dd_bg_color;
-extern u16 dd_ascii_font;
-extern u32 dd_ascii_font_diff;
 extern u16 dd_screen_x;
 extern u16 dd_screen_y;
+
+#define FONT_CACHE_AMOUNT 2
+extern u16 dd_afont[];
+extern u32 dd_afont_diff[];
 extern u8 dd_afont_data[];
 
 //Set Resolution
@@ -34,9 +36,9 @@ extern u8 dd_afont_data[];
 #define LINE_HEIGHT 16
 
 //setup
-extern void dd_initText(u8 font);
+extern void dd_initText();
 extern void dd_swapBuffer();
-extern void dd_loadTextFont(u8 f);
+extern void dd_loadTextFont(s32 id, u8 f);
 
 //draw
 extern void dd_setTextColor(u8 r, u8 g, u8 b);
@@ -48,7 +50,8 @@ extern void dd_setScreenColor(u8 r, u8 g, u8 b);
 extern void dd_clearScreen();
 extern void dd_clearRect(int x1, int y1, int x2, int y2);
 
-extern void dd_printChar(s32 use_bg, char c);
+extern void dd_printChar(s32 use_bg, s32 id, char c);
+extern void dd_printTextI(s32 use_bg, s32 id, char *s);
 extern void dd_printText(s32 use_bg, char *s);
 
 //util

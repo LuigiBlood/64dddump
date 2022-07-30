@@ -4,12 +4,13 @@
 
 u16 dd_color;
 u16 dd_bg_color;
-u16 dd_ascii_font;
-u32 dd_ascii_font_diff;
 u16 dd_screen_x;
 u16 dd_screen_y;
 u16 dd_screen_x_start;
-u8 dd_afont_data[0x3000] __attribute__ ((aligned (8)));
+
+u16 dd_afont[FONT_CACHE_AMOUNT];
+u32 dd_afont_diff[FONT_CACHE_AMOUNT];
+u8 dd_afont_data[0x3000 * FONT_CACHE_AMOUNT] __attribute__ ((aligned (8)));
 
 //Set Text Color
 void dd_setTextColor(u8 r, u8 g, u8 b)
@@ -68,11 +69,19 @@ void dd_clearRect(int x1, int y1, int x2, int y2)
 }
 
 //Print single character on screen
-void dd_printChar(s32 use_bg, char c)
+void dd_printChar(s32 use_bg, s32 id, char c)
 {
 	int i, j;
 	int code, dx, dy, cy, offset, intensity, width, y_diff;
 	double dr, dg, db, dc;
+	u32 afont, afont_diff;
+	u8 *afont_data;
+
+	if (id >= FONT_CACHE_AMOUNT) return;
+
+	afont = dd_afont[id];
+	afont_diff = dd_afont_diff[id];
+	afont_data = dd_afont_data + (0x3000 * id);
 
 	//Special Characters
 	if (c < 0x20)
@@ -88,9 +97,9 @@ void dd_printChar(s32 use_bg, char c)
 
 	//Regular Characters (I4)
 	//Proper Character Code for libleo
-	code = (c - 0x20) + dd_ascii_font;
+	code = (c - 0x20) + afont;
 	//Get Offset and overall char info
-	offset = LeoGetAAdr(code, &dx, &dy, &cy) - dd_ascii_font_diff;
+	offset = LeoGetAAdr(code, &dx, &dy, &cy) - afont_diff;
 	//Calculate proper image width
 	width = ((dx+1)&~1);
 	//Align chars on the same line
@@ -107,7 +116,7 @@ void dd_printChar(s32 use_bg, char c)
 			if ((j + dd_screen_x) >= SCREEN_SIZE_X) break;
 
 			//Get the Pixel Intensity Level
-			intensity = dd_afont_data[offset + (((i * width) + j) / 2)];
+			intensity = afont_data[offset + (((i * width) + j) / 2)];
 			if ((j & 1) == 0) intensity >>= 4;
 			intensity &= 0x0F;
 
@@ -144,9 +153,17 @@ void dd_printChar(s32 use_bg, char c)
 }
 
 //Print string on screen
-void dd_printText(s32 use_bg, char *s)
+void dd_printTextI(s32 use_bg, s32 id, char *s)
 {
+	if (id >= FONT_CACHE_AMOUNT) return;
+
 	dd_screen_x_start = dd_screen_x;
-	while(*s) dd_printChar(use_bg, *s++);
+	while(*s) dd_printChar(use_bg, id, *s++);
 	osWritebackDCacheAll();
 }
+
+void dd_printText(s32 use_bg, char *s)
+{
+	dd_printTextI(use_bg, 0, s);
+}
+
