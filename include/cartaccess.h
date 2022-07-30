@@ -14,6 +14,7 @@ extern OSMesgQueue dmaMessageQ;
 extern OSPiHandle *pi_handle;
 extern FATFS FatFs;
 extern TCHAR DumpPath[256];
+extern TCHAR LogPath[256];
 
 extern void initCartPi();
 extern FRESULT initFatFs();

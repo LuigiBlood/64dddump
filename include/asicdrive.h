@@ -17,6 +17,7 @@
 //Max LBA
 #define MAX_P_LBA                  0x10dbUL
 #define MAX_L_LBA                  (MAX_P_LBA - SYSTEM_LBAS)
+#define SIZ_P_LBA                  (MAX_P_LBA + 1)
 
 #define USR_SECS_PER_BLK          85 /* Number of user sectors in a logical block */
 #define C2_SECS_PER_BLK            4 /* Number of C2 sectors in a logical block */

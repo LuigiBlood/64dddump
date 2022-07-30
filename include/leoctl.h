@@ -72,5 +72,6 @@ extern s32 convertBCD(s32 value);
 
 //string
 extern char* diskErrorString(s32 error);
+extern s32 diskLogOutput();
 
 #endif

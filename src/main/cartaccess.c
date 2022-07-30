@@ -10,6 +10,7 @@ OSPiHandle *pi_handle;
 
 FATFS FatFs;
 TCHAR DumpPath[256];
+TCHAR LogPath[256];
 
 void initCartPi()
 {
@@ -34,6 +35,7 @@ FRESULT makeUniqueFilename(const TCHAR *path, const TCHAR *ext)
 
 	//Path as is
 	sprintf(DumpPath, "%s.%s", path, ext);
+	sprintf(LogPath, "%s.log", path);
 	fr = f_stat(DumpPath, 0);
 	if (fr == FR_NO_FILE) return fr;
 	else if (fr != FR_OK) return fr;
@@ -42,6 +44,7 @@ FRESULT makeUniqueFilename(const TCHAR *path, const TCHAR *ext)
 	while (num < 500)
 	{
 		sprintf(DumpPath, "%s_%i.%s", path, num, ext);
+		sprintf(LogPath, "%s_%i.log", path, num);
 		fr = f_stat(DumpPath, 0);
 		if (fr == FR_NO_FILE) return fr;
 		else if (fr != FR_OK) return fr;

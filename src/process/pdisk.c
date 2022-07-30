@@ -85,7 +85,7 @@ void pdisk_init()
 	pdisk_skip_lba_end = -1;
 	
 	bzero(blockData, USR_SECS_PER_BLK*SEC_SIZE_ZONE0);
-	bzero(errorData, MAX_P_LBA);
+	bzero(errorData, SIZ_P_LBA);
 }
 
 void pdisk_update()
@@ -228,7 +228,7 @@ void pdisk_update()
 		haxReadErrorRetry(64 >> pdisk_select_retries);
 
 		bzero(blockData, USR_SECS_PER_BLK*SEC_SIZE_ZONE0);
-		bzero(errorData, MAX_P_LBA);
+		bzero(errorData, SIZ_P_LBA);
 		osWritebackDCacheAll();
 
 		crc32calc_start();
@@ -308,7 +308,7 @@ void pdisk_update()
 								pdisk_error_count_skip = 0;
 							}
 						}
-						else if (pdisk_cur_lba > pdisk_lba_ram_end && pdisk_cur_lba < MAX_P_LBA)
+						else if (pdisk_cur_lba > pdisk_lba_ram_end && pdisk_cur_lba <= MAX_P_LBA)
 						{
 							//Between Formatted RAM End and Max LBA
 							pdisk_error_count_skip++;
@@ -358,11 +358,23 @@ void pdisk_update()
 	{
 		//Mode: Save to SD Card
 		FRESULT fr;
-		int proc;
+		int proc, logsize;
 
 		fr = writeFileROM(DumpPath, PDISK_DISK_SIZE, &proc);
-		if (fr != FR_OK) proc_sub_dump_error = proc;
-		proc_sub_dump_error2 = fr;
+		if (fr != FR_OK)
+		{
+			proc_sub_dump_error = proc;
+			proc_sub_dump_error2 = fr;
+			proc_sub_dump_mode = PDISK_MODE_FINISH;
+		}
+		else
+		{
+			//Produce Log
+			logsize = diskLogOutput();
+			fr = writeFileRAM(blockData, LogPath, logsize, &proc);
+			if (fr != FR_OK) proc_sub_dump_error = proc;
+			proc_sub_dump_error2 = fr;
+		}
 		proc_sub_dump_mode = PDISK_MODE_FINISH;
 	}
 	else if (proc_sub_dump_mode == PDISK_MODE_FATAL)
