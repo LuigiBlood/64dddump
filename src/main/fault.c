@@ -67,22 +67,19 @@ void faultproc(void *arg)
     else if (cause == 0x1F) cause = 0x11;
 	
 	sprintf(console_text, " THREAD:%d  (%s)\n", t->id, str_cause[cause]);
-	dd_printText(FALSE, console_text);
+	dd_printTextI(FALSE, 1, console_text);
 	sprintf(
 		console_text,
         " SR:%08X  PC:%08X  VA:%08X\n\n",
         t->context.sr, t->context.pc, t->context.badvaddr
     );
-	dd_printText(FALSE, console_text);
+	dd_printTextI(FALSE, 1, console_text);
 
 	for (i = 0, p = &t->context.at; i < 29; i++, p++)
     {
-        sprintf(console_text, " %.2s:%08X%c", str_gpr[i], (u32)*p, (i+1) % 2 ? ' ' : '\n');
-		if ((i+1) % 2)
-		{
-			dd_setTextPosition(20, dd_getTextPositionY());
-		}
-		dd_printText(FALSE, console_text);
+        dd_setTextPosition(20 + (80 * (i % 3)), dd_getTextPositionY());
+        sprintf(console_text, " %.2s:%08X%c", str_gpr[i], (u32)*p, (i+1) % 3 ? ' ' : '\n');
+		dd_printTextI(FALSE, 1, console_text);
     }
 
 	dd_swapBuffer();
