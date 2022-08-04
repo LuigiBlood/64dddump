@@ -13,6 +13,8 @@ extern OSPiHandle	*DriveRomHandle;
 
 extern u8			blockData[];
 extern u8			errorData[];
+extern s32			errorCheck;
+extern s32			errorDiskId;
 extern LEODiskID	_diskId;
 
 #define LEO_DRIVE_TYPE_NONE   -1
@@ -25,6 +27,7 @@ extern LEODiskID	_diskId;
 
 #define LEO_SENSE_GOOD			0
 #define LEO_SENSE_SKIPPED_LBA	99
+#define LEO_SENSE_FMTLOAD		100
 
 //libleo
 extern int leoWait_mecha_cmd_done();
@@ -70,6 +73,9 @@ extern u32 diskGetIPLType();
 extern s32 isRegisterPresent();
 extern s32 isIPLROMPresent();
 extern s32 convertBCD(s32 value);
+extern s32 checkDiskIDOutput();
+extern s32 isSysDataValid();
+extern s32 isErrorDiskRelated(s32 error);
 
 //string
 extern char* diskErrorString(s32 error);

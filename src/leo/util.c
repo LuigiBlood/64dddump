@@ -123,3 +123,46 @@ s32 convertBCD(s32 value)
 	}
 	return ret;
 }
+
+s32 checkDiskIDOutput()
+{
+	//Return 0 if the Disk ID is bad to actually output
+	//Return 1 if it's fine
+	if (errorDiskId != LEO_SENSE_GOOD) return 0;
+
+	//Check if chars are either digits or uppercase letter
+	if (((_diskId.gameName[0] >= 0x30 && _diskId.gameName[0] < 0x3A) ||
+		(_diskId.gameName[0] >  0x40 && _diskId.gameName[0] < 0x5B)) &&
+		((_diskId.gameName[1] >= 0x30 && _diskId.gameName[1] < 0x3A) ||
+		(_diskId.gameName[1] >  0x40 && _diskId.gameName[1] < 0x5B)) &&
+		((_diskId.gameName[2] >= 0x30 && _diskId.gameName[2] < 0x3A) ||
+		(_diskId.gameName[2] >  0x40 && _diskId.gameName[2] < 0x5B)) &&
+		((_diskId.gameName[3] >= 0x30 && _diskId.gameName[3] < 0x3A) ||
+		(_diskId.gameName[3] >  0x40 && _diskId.gameName[3] < 0x5B)))
+	{
+		return 1;
+	}
+
+	return 0;
+}
+
+s32 isSysDataValid()
+{
+	//Do not use for LBA 4 and 5
+
+	//Format Type (must be 0x10)
+	if (LEO_sys_data[0x04] != 0x10) return 0;
+	//Disk Type must have same as Format Type
+	if ((LEO_sys_data[0x05] & 0xF0) != 0x10) return 0;
+	//Disk Type must be between 0 to 6 included
+	if ((LEO_sys_data[0x05] & 0xF) >= 7) return 0;
+
+	return 1;
+}
+
+s32 isErrorDiskRelated(s32 error)
+{
+	//If Sense Error is disk related
+	if (error >= 20 && error < 30) return 1;
+	return 0;
+}

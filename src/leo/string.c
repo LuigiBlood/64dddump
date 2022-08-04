@@ -127,13 +127,24 @@ s32 diskLogOutput()
 	char range[16];
 	LEODiskTime time;
 
-	//Put Dumper Info
+	//Put Dumper Info and Dump Date
 	size += sprintf((char*)blockData + size, "%s", SW_NAMESTRING);
 	rtcRead(&time);
 	size += sprintf((char*)blockData + size, "Dump Date: ");
 	size += diskRTCString((char*)blockData + size, &time);
 	size += sprintf((char*)blockData + size, "\n\n");
-	size += diskIDString((char*)blockData + size, &_diskId);
+
+	if (checkDiskIDOutput())
+	{
+		//Put Disk ID
+		size += diskIDString((char*)blockData + size, &_diskId);
+	}
+	else
+	{
+		//No Disk ID
+		size += sprintf((char*)blockData + size, "Invalid Disk ID.\n");
+	}
+
 	size += sprintf((char*)blockData + size, "\nDump Log:\n");
 
 	for (i = 0; i <= MAX_P_LBA+1; i++)

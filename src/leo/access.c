@@ -8,6 +8,8 @@
 /* Disk */
 u8	blockData[USR_SECS_PER_BLK*SEC_SIZE_ZONE0] __attribute__ ((aligned (8)));	//0x4D08
 u8	errorData[SIZ_P_LBA];
+s32 errorCheck;
+s32 errorDiskId;
 LEODiskID	_diskId;
 
 s32 diskReadLBA(s32 lba)
@@ -42,16 +44,101 @@ s32 diskReadID()
 
 	LeoReadDiskID(&_cmdBlk, &_diskId, &diskMsgQ);
 	osRecvMesg(&diskMsgQ, (OSMesg *)&error, OS_MESG_BLOCK);
+
+	errorDiskId = error;
 	return error;
 }
 
 s32 diskCheck()
 {
-	/* Check Disk System Info, do diskReadID first, if not working, do manual work here */
+	s32 i;
 	s32 error;
-	error = diskReadID();
+	const s32 system_lbas[] = {SYS_DATA_LBA1, SYS_DATA_LBA2, SYS_DATA_LBA3, SYS_DATA_LBA4};
+	s32 offset_lba = diskGetDriveType() == LEO_DRIVE_TYPE_DEV ? SYS_LBA_DEV_OFFSET : 0;
 
-	//TODO: Actual checks
+	/* Check Disk System Info, do diskReadID first, if not working, do manual work here */
+	errorCheck = diskReadID();
+
+	//If the read is good, then there's nothing else to do
+	if (errorCheck == LEO_SENSE_GOOD)
+		return errorCheck;
+	
+	//If the error is unrelated to the disk that's a problem and we need to stop immediately
+	if (!isErrorDiskRelated(errorCheck))
+		return errorCheck;
+
+	//If the read is bad however, we need to force things a little bit
+	bzero(LEO_sys_data, 0xE8);	//Zero Current System Data
+	haxSystemAreaReadSet();		//Set System Area is read to use LeoReadWrite without any checks from the driver
+	haxMediumChangedClear();	//Clear Medium Changed Flag in drive and driver
+
+	//Try to read the regular System Data first
+	for (i = 0; i < 4; i++)
+	{
+		errorCheck = diskReadLBA(system_lbas[i] + offset_lba);
+		if (errorCheck == LEO_SENSE_GOOD) break;
+		if (!isErrorDiskRelated(errorCheck))
+			return errorCheck;
+	}
+
+	if (errorCheck == LEO_SENSE_GOOD)
+	{
+		//System Data has been read correctly:
+
+		//Use Formatting Info for dumping
+		if (diskGetDriveType() == LEO_DRIVE_TYPE_DEV)
+			bcopy(blockData, LEO_sys_data, 0xC0);	//Development Drive
+		else
+			bcopy(blockData, LEO_sys_data, 0xE8);	//Retail and Writer Drive
+		
+		//Update Disk Type for library to do its job
+		LEOdisk_type = LEO_sys_data[0x05] & 0x0F;
+		errorCheck = isSysDataValid() ? LEO_SENSE_GOOD : -1;
+	}
+	
+	if (errorCheck != LEO_SENSE_GOOD)
+	{
+		//System Data has NOT been read correctly:
+		LEOdisk_type = 0;			//Set Disk Type in libleo to 0 by default
+
+		//Read Disk Formatting Info (Try LBA 4, then 5 if it didn't work out)
+		errorCheck = diskReadLBA(SYS_DATA_INIT_LBA1);
+		if (!isErrorDiskRelated(errorCheck))
+			return errorCheck;
+		if (errorCheck != LEO_SENSE_GOOD)
+		{
+			errorCheck = diskReadLBA(SYS_DATA_INIT_LBA2);
+
+			//If you really cannot get those, then it's best to not even try further.
+			if (errorCheck != LEO_SENSE_GOOD) return errorCheck;
+		}
+
+		//Use Formatting Info for dumping
+		if (diskGetDriveType() == LEO_DRIVE_TYPE_DEV)
+			bcopy(blockData, LEO_sys_data, 0xC0);	//Development Drive
+		else
+			bcopy(blockData, LEO_sys_data, 0xE8);	//Retail and Writer Drive
+		errorCheck = LEO_SENSE_FMTLOAD;
+	}
+
+	//Try to read Disk ID (not required)
+	error = diskReadLBA(DISK_ID_LBA1);
+	if (!isErrorDiskRelated(error))
+		return error;
+	if (error != LEO_SENSE_GOOD)
+	{
+		error = diskReadLBA(DISK_ID_LBA2);
+		if (!isErrorDiskRelated(error))
+			return error;
+	}
+
+	if (error == LEO_SENSE_GOOD)
+		bcopy((void*)&_diskId, blockData, sizeof(LEODiskID));	//Copy Disk ID
+	else
+		bzero((void*)&_diskId, sizeof(LEODiskID));				//Clear Disk ID
+
+	errorDiskId = error;
+	return errorCheck;
 }
 
 s32 diskBreakMotor()
@@ -147,7 +234,7 @@ s32 rtcRead(LEODiskTime *ret)
 	LeoReadRTC(&_cmdBlk, &diskMsgQ);
 	osRecvMesg(&diskMsgQ, (OSMesg *)&error, OS_MESG_BLOCK);
 
-	if (error == LEO_ERROR_GOOD)
+	if (error == LEO_SENSE_GOOD)
 		bcopy(&_cmdBlk.data.time, ret, sizeof(LEODiskTime));
 	
 	return error;
@@ -160,7 +247,7 @@ u32 rtcReadFat()
 	
 	error = rtcRead(&time);
 
-	if (error == LEO_ERROR_GOOD)
+	if (error == LEO_SENSE_GOOD)
 	{
 		s32 year = convertBCD((time.yearhi << 8) | time.yearlo);
 		s32 month = convertBCD(time.month);

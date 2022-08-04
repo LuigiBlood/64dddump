@@ -11,6 +11,9 @@
 #define SYS_LBA_DEV_OFFSET   2        /* Difference between Retail and Development Disks */
 #define SYS_UNCORR_LBA       12       /* Copy Protection */
 
+#define SYS_DATA_INIT_LBA1   4        /* LBA for System Data Initial Block */
+#define SYS_DATA_INIT_LBA2   5        /* LBA for System Data Initial Block */
+
 #define DISK_ID_LBA1         14       /* LBA for Disk ID */
 #define DISK_ID_LBA2         15       /* LBA for Disk ID */
 

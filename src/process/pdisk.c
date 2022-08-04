@@ -24,6 +24,7 @@
 #define PDISK_MODE_INIT		0
 #define PDISK_MODE_WAIT		1
 #define PDISK_MODE_CHECK	2
+#define PDISK_MODE_DSKERROR	11
 #define PDISK_MODE_CONF1	3
 #define PDISK_MODE_CONF2	4
 #define PDISK_MODE_CONF3	5
@@ -51,6 +52,7 @@ s32 pdisk_dump_pause;	//is Dump Paused
 s32 pdisk_error_count;	//Error Counter
 s32 pdisk_error_fatal;	//Fatal Error Sense
 s32 pdisk_skip_lba_end;	//Skip LBA End
+s32 pdisk_isdiskidgood;	//Disk ID Good for output
 
 #define PDISK_ERROR_COUNT_SKIP_MAX	5
 s32 pdisk_error_count_skip;
@@ -114,13 +116,25 @@ void pdisk_update()
 		//Check for Disk presence, reset when disk is ejected
 		if (!isDiskPresent()) proc_sub_dump_mode = PDISK_MODE_WAIT;
 
-		//Read Disk ID would do a bunch of checks on top
-		//TODO: What to do when this fails
-		if (diskReadID() == LEO_STATUS_GOOD)
+		//Check Disk Formatting
+		diskCheck();
+		if (errorCheck == LEO_STATUS_GOOD || errorCheck == LEO_SENSE_FMTLOAD)
 		{
+			pdisk_isdiskidgood = checkDiskIDOutput();
 			proc_sub_dump_mode = PDISK_MODE_CONF1;
 			pdisk_e_checkbounds();
 		}
+		else
+		{
+			proc_sub_dump_mode = PDISK_MODE_DSKERROR;
+		}
+	}
+	else if (proc_sub_dump_mode == PDISK_MODE_DSKERROR)
+	{
+		//Mode: Disk Error
+
+		//Check for Disk presence, reset when disk is ejected
+		if (!isDiskPresent()) proc_sub_dump_mode = PDISK_MODE_WAIT;
 	}
 	else if (proc_sub_dump_mode == PDISK_MODE_CONF1)
 	{
@@ -434,27 +448,45 @@ void pdisk_render(s32 fullrender)
 			dd_setTextPosition(20, 16*4);
 			dd_printText(FALSE, "Checking the disk...\n");
 		}
+		else if (proc_sub_dump_mode == PDISK_MODE_DSKERROR)
+		{
+			dd_setTextColor(255,80,25);
+			dd_setTextPosition(20, 16*4);
+			dd_printText(FALSE, "Could not read System Data.\nThe disk might be corrupted.\n");
+			sprintf(console_text, "Error %i\n%s\n", errorCheck, diskErrorString(errorCheck));
+		}
 		else if (proc_sub_dump_mode == PDISK_MODE_CONF1)
 		{
 			dd_setTextColor(255,255,255);
 			dd_setTextPosition(20, 16*4);
-			sprintf(console_text, "Game Code: %c%c%c%c -- Version: %i\n", _diskId.gameName[0], _diskId.gameName[1], _diskId.gameName[2], _diskId.gameName[3], _diskId.gameVersion);
-			dd_printText(FALSE, console_text);
-			sprintf(console_text, "Write Date: %02x%02x/%02x/%02x %02x:%02x:%02x\n", _diskId.serialNumber.time.yearhi, _diskId.serialNumber.time.yearlo,
-				_diskId.serialNumber.time.month, _diskId.serialNumber.time.day,
-				_diskId.serialNumber.time.hour, _diskId.serialNumber.time.minute, _diskId.serialNumber.time.second);
-			dd_printText(FALSE, console_text);
-			if (*((u32*)&LEO_sys_data[0]) == LEO_COUNTRY_JPN)
-				dd_printText(FALSE, "Disk Region: Japan\n");
-			else if (*((u32*)&LEO_sys_data[0]) == LEO_COUNTRY_USA)
-				dd_printText(FALSE, "Disk Region: USA\n");
-			else if (*((u32*)&LEO_sys_data[0]) == LEO_COUNTRY_NONE)
-				dd_printText(FALSE, "Disk Region: None\n");
-			else
-				dd_printText(FALSE, "Disk Region: Unknown\n");
+			if (pdisk_isdiskidgood)
+			{
+				sprintf(console_text, "Game Code: %c%c%c%c -- Version: %i\n", _diskId.gameName[0], _diskId.gameName[1], _diskId.gameName[2], _diskId.gameName[3], _diskId.gameVersion);
+				dd_printText(FALSE, console_text);
+				sprintf(console_text, "Write Date: %02x%02x/%02x/%02x %02x:%02x:%02x\n", _diskId.serialNumber.time.yearhi, _diskId.serialNumber.time.yearlo,
+					_diskId.serialNumber.time.month, _diskId.serialNumber.time.day,
+					_diskId.serialNumber.time.hour, _diskId.serialNumber.time.minute, _diskId.serialNumber.time.second);
+				dd_printText(FALSE, console_text);
+				if (*((u32*)&LEO_sys_data[0]) == LEO_COUNTRY_JPN)
+					dd_printText(FALSE, "Disk Region: Japan\n");
+				else if (*((u32*)&LEO_sys_data[0]) == LEO_COUNTRY_USA)
+					dd_printText(FALSE, "Disk Region: USA\n");
+				else if (*((u32*)&LEO_sys_data[0]) == LEO_COUNTRY_NONE)
+					dd_printText(FALSE, "Disk Region: None\n");
+				else
+					dd_printText(FALSE, "Disk Region: Unknown\n");
 
-			sprintf(console_text, "Disk Type: %i\n", (LEO_sys_data[0x05] & 0x0F));
-			dd_printText(FALSE, console_text);
+				sprintf(console_text, "Disk Type: %i\n", (LEO_sys_data[0x05] & 0x0F));
+				dd_printText(FALSE, console_text);
+			}
+			else if (errorCheck == LEO_SENSE_GOOD)
+			{
+				dd_printText(FALSE, "Disk ID is invalid or couldn't be read.\nSystem Data info is valid.\n");
+			}
+			else //if (errorCheck == LEO_SENSE_FMTLOAD)
+			{
+				dd_printText(FALSE, "Disk ID is invalid or couldn't be read.\nSystem Data info is invalid.\nUsing Base System Data as substitute.\n");
+			}
 
 			dd_setTextPosition(20, 16*9);
 			dd_setTextColor(255,255,255);
@@ -625,6 +657,7 @@ void pdisk_render(s32 fullrender)
 				dd_printText(FALSE, console_text);
 			}
 
+			dd_setTextColor(255,255,255);
 			dd_setTextPosition(20, 16*6);
 			dd_printText(FALSE, "Saving Disk file as\n");
 			dd_printText(FALSE, DumpPath);
@@ -700,6 +733,7 @@ void pdisk_render(s32 fullrender)
 			}
 			else
 			{
+				dd_setTextColor(255,255,255);
 				sprintf(console_text, "CRC32: %08X\n", crc32calc);
 				dd_printText(FALSE, console_text);
 				dd_printText(FALSE, "Disk dumped as\n");
