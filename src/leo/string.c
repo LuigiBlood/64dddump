@@ -87,6 +87,36 @@ char* diskErrorString(s32 error)
 	}
 }
 
+s32 diskRTCString(char* out, LEODiskTime* time)
+{
+	return sprintf(out, "%02x%02x-%02x-%02x %02x:%02x:%02x",
+		time->yearhi, time->yearlo, time->month, time->day,
+		time->hour, time->minute, time->second);
+}
+
+s32 diskIDString(char* out, LEODiskID* diskid)
+{
+	s32 size = 0;
+	size += sprintf(out + size, "Disk Information:\n%c%c%c%c - Ver.%i - Disk %i\n",
+		diskid->gameName[0], diskid->gameName[1], diskid->gameName[2], diskid->gameName[3],
+		diskid->gameVersion, diskid->diskNumber);
+	size += sprintf(out + size, "Write Date: ");
+	size += diskRTCString(out + size, &diskid->serialNumber.time);
+	size += sprintf(out + size, "\n");
+
+	if (*((u32*)&LEO_sys_data[0]) == LEO_COUNTRY_JPN)
+		size += sprintf(out + size, "Region: Japan");
+	else if (*((u32*)&LEO_sys_data[0]) == LEO_COUNTRY_USA)
+		size += sprintf(out + size, "Region: USA");
+	else if (*((u32*)&LEO_sys_data[0]) == LEO_COUNTRY_NONE)
+		size += sprintf(out + size, "Region: None");
+	else
+		size += sprintf(out + size, "Region: Unknown");
+	size += sprintf(out + size, " - Format Type: %i\n", (LEO_sys_data[0x05] & 0x0F));
+
+	return size;
+}
+
 s32 diskLogOutput()
 {
 	s32 size = 0;
@@ -95,9 +125,16 @@ s32 diskLogOutput()
 	s32 lba_first_error = -1;
 	s32 i;
 	char range[16];
+	LEODiskTime time;
 
 	//Put Dumper Info
-	size += sprintf((char*)blockData + size, "%s\n", SW_NAMESTRING);
+	size += sprintf((char*)blockData + size, "%s", SW_NAMESTRING);
+	rtcRead(&time);
+	size += sprintf((char*)blockData + size, "Dump Date: ");
+	size += diskRTCString((char*)blockData + size, &time);
+	size += sprintf((char*)blockData + size, "\n\n");
+	size += diskIDString((char*)blockData + size, &_diskId);
+	size += sprintf((char*)blockData + size, "\nDump Log:\n");
 
 	for (i = 0; i <= MAX_P_LBA+1; i++)
 	{
