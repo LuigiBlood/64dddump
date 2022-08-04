@@ -138,8 +138,8 @@ void registerBlockDump()
 	}
 }
 
-/* For FatFs - RTC */
-u32 rtcRead()
+/* RTC */
+s32 rtcRead(LEODiskTime *ret)
 {
 	s32 error;
 	LEOCmd _cmdBlk;
@@ -148,13 +148,26 @@ u32 rtcRead()
 	osRecvMesg(&diskMsgQ, (OSMesg *)&error, OS_MESG_BLOCK);
 
 	if (error == LEO_ERROR_GOOD)
+		bcopy(&_cmdBlk.data.time, ret, sizeof(LEODiskTime));
+	
+	return error;
+}
+
+u32 rtcReadFat()
+{
+	s32 error;
+	LEODiskTime time;
+	
+	error = rtcRead(&time);
+
+	if (error == LEO_ERROR_GOOD)
 	{
-		s32 year = convertBCD((_cmdBlk.data.time.yearhi << 8) | _cmdBlk.data.time.yearlo);
-		s32 month = convertBCD(_cmdBlk.data.time.month);
-		s32 day = convertBCD(_cmdBlk.data.time.day);
-		s32 hour = convertBCD(_cmdBlk.data.time.hour);
-		s32 minute = convertBCD(_cmdBlk.data.time.minute);
-		s32 second = convertBCD(_cmdBlk.data.time.second);
+		s32 year = convertBCD((time.yearhi << 8) | time.yearlo);
+		s32 month = convertBCD(time.month);
+		s32 day = convertBCD(time.day);
+		s32 hour = convertBCD(time.hour);
+		s32 minute = convertBCD(time.minute);
+		s32 second = convertBCD(time.second);
 		return (year - 1980) << 25 | month << 21 | day << 16 | hour << 11 | minute << 5 | second >> 1;
 	}
 	else

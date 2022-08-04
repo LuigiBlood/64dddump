@@ -53,7 +53,8 @@ extern void eepromBlockRead();
 //-register
 extern void registerBlockDump();
 //-rtc
-extern u32 rtcRead();
+extern s32 rtcRead(LEODiskTime *ret);
+extern u32 rtcReadFat();
 
 //util
 extern u32 diskReadRegister(u32 address);

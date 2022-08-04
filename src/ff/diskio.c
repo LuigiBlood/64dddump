@@ -157,7 +157,7 @@ DRESULT disk_ioctl (
 
 DWORD get_fattime (void)
 {
-	return rtcRead();
+	return rtcReadFat();
 }
 
 #endif
