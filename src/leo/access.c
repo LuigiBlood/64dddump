@@ -61,7 +61,10 @@ s32 diskCheck()
 
 	//If the read is good, then there's nothing else to do
 	if (errorCheck == LEO_SENSE_GOOD)
+	{
+		errorDiskId = errorCheck;
 		return errorCheck;
+	}
 	
 	//If the error is unrelated to the disk that's a problem and we need to stop immediately
 	if (!isErrorDiskRelated(errorCheck))
