@@ -55,6 +55,14 @@ s32 pdisk_e_checkbounds()
 			pdisk_lba_rom_end = ((LEO_sys_data[0xE0] << 8) | LEO_sys_data[0xE1]) + SYSTEM_LBAS;
 			pdisk_lba_ram_start = ((LEO_sys_data[0xE2] << 8) | LEO_sys_data[0xE3]) + SYSTEM_LBAS;
 			pdisk_lba_ram_end = ((LEO_sys_data[0xE4] << 8) | LEO_sys_data[0xE5]) + SYSTEM_LBAS;
+
+			//Make sure it's not above limit per disk type
+			if (pdisk_lba_rom_end > (capacity.startLBA - 1 + SYSTEM_LBAS))
+				pdisk_lba_rom_end = capacity.startLBA - 1 + SYSTEM_LBAS;
+			if (pdisk_lba_ram_start > (capacity.startLBA + SYSTEM_LBAS))
+				pdisk_lba_ram_start = capacity.startLBA + SYSTEM_LBAS;
+			if (pdisk_lba_ram_end > (capacity.endLBA + SYSTEM_LBAS))
+				pdisk_lba_ram_end = capacity.endLBA + SYSTEM_LBAS;
 		}
 		else
 		{
