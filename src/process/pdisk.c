@@ -245,8 +245,6 @@ void pdisk_update()
 		bzero(errorData, SIZ_P_LBA);
 		osWritebackDCacheAll();
 
-		crc32calc_start();
-
 		//Zero the ROM Area so the skipping process can be even faster and focus on dumping the disk faster
 		for (offset = 0; offset < PDISK_DISK_SIZE; offset += USR_SECS_PER_BLK*SEC_SIZE_ZONE0)
 		{
@@ -276,7 +274,6 @@ void pdisk_update()
 			error = diskReadLBA(pdisk_cur_lba);
 			osWritebackDCacheAll();
 			copyToCartPi(blockData, (char*)offset, size);
-			crc32calc_procarray(blockData, size);
 
 			switch (error)
 			{
@@ -349,7 +346,10 @@ void pdisk_update()
 				else if (pdisk_cur_lba < pdisk_lba_ram_start)
 					pdisk_skip_lba_end = pdisk_lba_ram_start-1;
 				else if (pdisk_cur_lba <= MAX_P_LBA)
+				{
+					diskBreakMotor();
 					pdisk_skip_lba_end = MAX_P_LBA;
+				}
 
 				pdisk_dump_pause = 0;
 			}
@@ -363,8 +363,19 @@ void pdisk_update()
 		if (pdisk_cur_lba > MAX_P_LBA)
 		{
 			diskBreakMotor();
-			crc32calc_end();
-			makeUniqueFilename("/dump/DDDisk", "ndd");
+			if (pdisk_isdiskidgood)
+			{
+				char console_text[64];
+
+				sprintf(console_text, "/dump/DDDisk-%c%c%c%c%i-%i",
+					_diskId.gameName[0], _diskId.gameName[1], _diskId.gameName[2], _diskId.gameName[3],
+					_diskId.gameVersion, _diskId.diskNumber);
+				makeUniqueFilename(console_text, "ndd");
+			}
+			else
+			{
+				makeUniqueFilename("/dump/DDDisk", "ndd");
+			}
 			proc_sub_dump_mode = PDISK_MODE_SAVE;
 		}
 	}
@@ -373,6 +384,8 @@ void pdisk_update()
 		//Mode: Save to SD Card
 		FRESULT fr;
 		int proc, logsize;
+
+		pdisk_e_crc32();
 
 		fr = writeFileROM(DumpPath, PDISK_DISK_SIZE, &proc);
 		if (fr != FR_OK)

@@ -78,6 +78,20 @@ s32 pdisk_e_skiplba(s32 lba_skip_max)
 	for (; pdisk_cur_lba <= lba_skip_max; pdisk_cur_lba++)
 	{
 		diskSkipLBA(pdisk_cur_lba);
-		crc32calc_procfill(0, diskGetLBABlockSize(pdisk_cur_lba));
+		//crc32calc_procfill(0, diskGetLBABlockSize(pdisk_cur_lba));
 	}
+}
+
+void pdisk_e_crc32()
+{
+	crc32calc_start();
+	for (int i = 0; i <= MAX_P_LBA; i++)
+	{
+		u32 offset = diskGetLBAOffset(i);
+		s32 size = diskGetLBABlockSize(i);
+		osWritebackDCacheAll();
+		copyFromCartPi((char*)offset, blockData, size);
+		crc32calc_procarray(blockData, size);
+	}
+	crc32calc_end();
 }
