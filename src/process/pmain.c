@@ -15,6 +15,7 @@
 #include	"64drive.h"
 #include	"process.h"
 #include	"version.h"
+#include	"global.h"
 
 #define PMAIN_SELECT_MIN	0
 #define PMAIN_SELECT_MAX	4
@@ -51,6 +52,14 @@ void pmain_update()
 	if (select < PMAIN_SELECT_MIN) select = PMAIN_SELECT_MAX;
 	if (select > PMAIN_SELECT_MAX) select = PMAIN_SELECT_MIN;
 	if (drivetype == LEO_DRIVE_TYPE_NONE && !iplrompresent) select = 1;
+
+	if (readControllerPressed() & L_TRIG)
+	{
+		if (conf_sdcardwrite != -1)
+		{
+			conf_sdcardwrite ^= 1;
+		}
+	}
 
 	//Interaction
 	if (readControllerPressed() & A_BUTTON)
@@ -103,29 +112,48 @@ void pmain_render(s32 fullrender)
 			dd_printText(TRUE, "Please power off the Nintendo 64\nand insert a 64DD Disk Drive\nor/and an IPL ROM Cartridge.");
 		}
 
+		dd_setTextPosition(20, 184);
+		dd_setTextColor(255,255,255);
 		switch (cart_type)
 		{
 			case CART_CI:
-				dd_setTextPosition(20, 210);
-				dd_setTextColor(255,255,255);
-				dd_printText(FALSE, "64drive detected.");
+				dd_printText(FALSE, "64drive - ");
+				break;
+			case CART_ED:
+				dd_printText(FALSE, "Everdrive 64 - ");
 				break;
 			case CART_EDX:
-				dd_setTextPosition(20, 210);
-				dd_setTextColor(255,255,255);
-				dd_printText(FALSE, "Everdrive 64 detected.");
+				dd_printText(FALSE, "Everdrive 64X - ");
 				break;
 			default:
-				dd_setTextPosition(20, 210);
-				dd_setTextColor(255,255,255);
-				dd_printText(FALSE, "Unknown cartridge");
+				dd_printText(FALSE, "Unknown - ");
 				break;
 		}
+
+		if (conf_sdcardwrite == -1)
+		{
+			dd_printText(FALSE, "No SD Card Access");
+		}
+		else if (conf_sdcardwrite == 0)
+		{
+			dd_printText(FALSE, "USB UNFLoader Mode");
+		}
+		else if (conf_sdcardwrite == 1)
+		{
+			dd_printText(FALSE, "SD Card Write Mode");
+		}
+
+		dd_setTextPosition(20, 200);
+		dd_printText(FALSE, "(Press ");
+		dd_setTextColor(60,60,60);
+		dd_printText(FALSE, "L Button");
+		dd_setTextColor(255,255,255);
+		dd_printText(FALSE, " to change Write mode)");
 	}
 
 	if (drivetype >= LEO_DRIVE_TYPE_RETAIL || iplrompresent)
 	{
-		dd_setTextPosition(80, 100);
+		dd_setTextPosition(80, 84);
 
 		if (select == 0) dd_setTextColor(0,255,0);
 		else if (drivetype < LEO_DRIVE_TYPE_RETAIL) dd_setTextColor(128,25,25);

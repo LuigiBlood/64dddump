@@ -14,6 +14,9 @@
 #include	"64drive.h"
 #include	"process.h"
 
+#include	<cart.h>
+#include	"global.h"
+
 s32 proc_mode;
 s32 proc_mode_next;
 
@@ -23,6 +26,11 @@ void process_first(s32 mode)
 	dd_initText();
 	dd_loadTextFont(0, 4);
 	dd_loadTextFont(1, 10);
+
+	if (cart_type == CART_NULL)
+		conf_sdcardwrite = -1;
+	else
+		conf_sdcardwrite = 1;
 
 	process_change(mode);
 	process_init(mode);

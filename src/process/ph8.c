@@ -88,7 +88,6 @@ void ph8_update()
 		if (ph8_dump_offset >= PH8_SIZE)
 		{
 			crc32calc_end();
-			makeUniqueFilename("/dump/DDH8", "rom");
 			proc_sub_dump_mode = PH8_MODE_SAVE;
 		}
 	}
@@ -97,9 +96,13 @@ void ph8_update()
 		FRESULT fr;
 		int proc;
 
-		fr = writeFileROM(DumpPath, PH8_SIZE, &proc);
-		if (fr != FR_OK) proc_sub_dump_error = proc;
-		proc_sub_dump_error2 = fr;
+		if (conf_sdcardwrite == 1)
+		{
+			makeUniqueFilename("/dump/DDH8", "rom");
+			fr = writeFileROM(DumpPath, PH8_SIZE, &proc);
+			if (fr != FR_OK) proc_sub_dump_error = proc;
+			proc_sub_dump_error2 = fr;
+		}
 		proc_sub_dump_mode = PH8_MODE_FINISH;
 	}
 	else if (proc_sub_dump_mode == PH8_MODE_FINISH)
@@ -161,8 +164,12 @@ void ph8_render(s32 fullrender)
 			dd_setTextPosition(20, 16*4);
 			sprintf(console_text, "%X/%X bytes\n", ph8_dump_offset, PH8_SIZE);
 			dd_printText(FALSE, console_text);
-			dd_printText(FALSE, "Saving H8 ROM file as\n");
-			dd_printText(FALSE, DumpPath);
+
+			if (conf_sdcardwrite == 1)
+			{
+				dd_printText(FALSE, "Saving H8 ROM file as\n");
+				dd_printText(FALSE, DumpPath);
+			}
 
 			ph8_f_progress((ph8_dump_offset / (float)PH8_SIZE));
 		}
@@ -173,22 +180,29 @@ void ph8_render(s32 fullrender)
 			sprintf(console_text, "%X/%X bytes\nCRC32: %08X\n", ph8_dump_offset, PH8_SIZE, crc32calc);
 			dd_printText(FALSE, console_text);
 
-			if (proc_sub_dump_error != WRITE_ERROR_OK)
+			if (conf_sdcardwrite == 1)
 			{
-				if (proc_sub_dump_error == WRITE_ERROR_FOPEN)
-					dd_printText(FALSE, "f_open() Error");
-				else if (proc_sub_dump_error == WRITE_ERROR_FWRITE)
-					dd_printText(FALSE, "f_write() Error");
-				else if (proc_sub_dump_error == WRITE_ERROR_FCLOSE)
-					dd_printText(FALSE, "f_close() Error");
+				if (proc_sub_dump_error != WRITE_ERROR_OK)
+				{
+					if (proc_sub_dump_error == WRITE_ERROR_FOPEN)
+						dd_printText(FALSE, "f_open() Error");
+					else if (proc_sub_dump_error == WRITE_ERROR_FWRITE)
+						dd_printText(FALSE, "f_write() Error");
+					else if (proc_sub_dump_error == WRITE_ERROR_FCLOSE)
+						dd_printText(FALSE, "f_close() Error");
 
-				sprintf(console_text, " %i", proc_sub_dump_error2);
-				dd_printText(FALSE, console_text);
+					sprintf(console_text, " %i", proc_sub_dump_error2);
+					dd_printText(FALSE, console_text);
+				}
+				else
+				{
+					dd_printText(FALSE, "H8 ROM Dumped as\n");
+					dd_printText(FALSE, DumpPath);
+				}
 			}
 			else
 			{
-				dd_printText(FALSE, "H8 ROM Dumped as\n");
-				dd_printText(FALSE, DumpPath);
+				dd_printText(FALSE, "Dump 0x8000 bytes from cart.\n");
 			}
 
 			dd_setTextPosition(20, 16*8);

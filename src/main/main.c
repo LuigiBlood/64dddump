@@ -14,6 +14,7 @@
 #include	"leoctl.h"
 #include	"64drive.h"
 #include	"process.h"
+#include	"usb.h"
 
 extern OSMesgQueue	retraceMessageQ;
 extern OSMesg		retraceMessageBuf;
@@ -26,6 +27,7 @@ void mainproc(void *arg)
 	initCartPi();
 	
 	cart_init();
+	usb_initialize();
 	initFatFs();
 
 	initDisk();

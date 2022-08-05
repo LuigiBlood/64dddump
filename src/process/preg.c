@@ -87,7 +87,6 @@ void preg_update()
 		if (preg_dump_offset >= PREG_SIZE)
 		{
 			crc32calc_end();
-			makeUniqueFilename("/dump/DDReg", "bin");
 			proc_sub_dump_mode = PREG_MODE_SAVE;
 		}
 	}
@@ -96,9 +95,13 @@ void preg_update()
 		FRESULT fr;
 		int proc;
 
-		fr = writeFileROM(DumpPath, PREG_SIZE, &proc);
-		if (fr != FR_OK) proc_sub_dump_error = proc;
-		proc_sub_dump_error2 = fr;
+		if (conf_sdcardwrite == 1)
+		{
+			makeUniqueFilename("/dump/DDReg", "bin");
+			fr = writeFileROM(DumpPath, PREG_SIZE, &proc);
+			if (fr != FR_OK) proc_sub_dump_error = proc;
+			proc_sub_dump_error2 = fr;
+		}
 		proc_sub_dump_mode = PREG_MODE_FINISH;
 	}
 	else if (proc_sub_dump_mode == PREG_MODE_FINISH)
@@ -160,8 +163,12 @@ void preg_render(s32 fullrender)
 			dd_setTextPosition(20, 16*4);
 			sprintf(console_text, "%X/%X bytes\n", preg_dump_offset, PREG_SIZE);
 			dd_printText(FALSE, console_text);
-			dd_printText(FALSE, "Saving Register dump as\n");
-			dd_printText(FALSE, DumpPath);
+			
+			if (conf_sdcardwrite == 1)
+			{
+				dd_printText(FALSE, "Saving Register dump as\n");
+				dd_printText(FALSE, DumpPath);
+			}
 
 			preg_f_progress((preg_dump_offset / (float)PREG_SIZE));
 		}
@@ -172,22 +179,29 @@ void preg_render(s32 fullrender)
 			sprintf(console_text, "%X/%X bytes\nCRC32: %08X\n", preg_dump_offset, PREG_SIZE, crc32calc);
 			dd_printText(FALSE, console_text);
 
-			if (proc_sub_dump_error != WRITE_ERROR_OK)
+			if (conf_sdcardwrite == 1)
 			{
-				if (proc_sub_dump_error == WRITE_ERROR_FOPEN)
-					dd_printText(FALSE, "f_open() Error");
-				else if (proc_sub_dump_error == WRITE_ERROR_FWRITE)
-					dd_printText(FALSE, "f_write() Error");
-				else if (proc_sub_dump_error == WRITE_ERROR_FCLOSE)
-					dd_printText(FALSE, "f_close() Error");
+				if (proc_sub_dump_error != WRITE_ERROR_OK)
+				{
+					if (proc_sub_dump_error == WRITE_ERROR_FOPEN)
+						dd_printText(FALSE, "f_open() Error");
+					else if (proc_sub_dump_error == WRITE_ERROR_FWRITE)
+						dd_printText(FALSE, "f_write() Error");
+					else if (proc_sub_dump_error == WRITE_ERROR_FCLOSE)
+						dd_printText(FALSE, "f_close() Error");
 
-				sprintf(console_text, " %i", proc_sub_dump_error2);
-				dd_printText(FALSE, console_text);
+					sprintf(console_text, " %i", proc_sub_dump_error2);
+					dd_printText(FALSE, console_text);
+				}
+				else
+				{
+					dd_printText(FALSE, "Registers Dumped as\n");
+					dd_printText(FALSE, DumpPath);
+				}
 			}
 			else
 			{
-				dd_printText(FALSE, "Registers Dumped as\n");
-				dd_printText(FALSE, DumpPath);
+				dd_printText(FALSE, "Dump 0x1000 bytes from cart.\n");
 			}
 
 			dd_setTextPosition(20, 16*8);

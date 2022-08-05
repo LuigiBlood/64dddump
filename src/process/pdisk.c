@@ -20,6 +20,7 @@
 #include	"global.h"
 
 #include	"ff.h"
+#include	"usb.h"
 
 #define PDISK_MODE_INIT		0
 #define PDISK_MODE_WAIT		1
@@ -363,6 +364,20 @@ void pdisk_update()
 		if (pdisk_cur_lba > MAX_P_LBA)
 		{
 			diskBreakMotor();
+			proc_sub_dump_mode = PDISK_MODE_SAVE;
+		}
+	}
+	else if (proc_sub_dump_mode == PDISK_MODE_SAVE)
+	{
+		//Mode: Save to SD Card
+		FRESULT fr;
+		int proc, logsize;
+
+		pdisk_e_crc32();
+
+		if (conf_sdcardwrite == 1)
+		{
+			//Write to SD Card
 			if (pdisk_isdiskidgood)
 			{
 				char console_text[64];
@@ -376,31 +391,27 @@ void pdisk_update()
 			{
 				makeUniqueFilename("/dump/DDDisk", "ndd");
 			}
-			proc_sub_dump_mode = PDISK_MODE_SAVE;
-		}
-	}
-	else if (proc_sub_dump_mode == PDISK_MODE_SAVE)
-	{
-		//Mode: Save to SD Card
-		FRESULT fr;
-		int proc, logsize;
 
-		pdisk_e_crc32();
-
-		fr = writeFileROM(DumpPath, PDISK_DISK_SIZE, &proc);
-		if (fr != FR_OK)
-		{
-			proc_sub_dump_error = proc;
-			proc_sub_dump_error2 = fr;
-			proc_sub_dump_mode = PDISK_MODE_FINISH;
+			fr = writeFileROM(DumpPath, PDISK_DISK_SIZE, &proc);
+			if (fr != FR_OK)
+			{
+				proc_sub_dump_error = proc;
+				proc_sub_dump_error2 = fr;
+				proc_sub_dump_mode = PDISK_MODE_FINISH;
+			}
+			else
+			{
+				//Produce Log
+				logsize = diskLogOutput();
+				fr = writeFileRAM(blockData, LogPath, logsize, &proc);
+				if (fr != FR_OK) proc_sub_dump_error = proc;
+				proc_sub_dump_error2 = fr;
+			}
 		}
 		else
 		{
-			//Produce Log
-			logsize = diskLogOutput();
-			fr = writeFileRAM(blockData, LogPath, logsize, &proc);
-			if (fr != FR_OK) proc_sub_dump_error = proc;
-			proc_sub_dump_error2 = fr;
+			//USB UNFLoader
+			usb_write(DATATYPE_TEXT, blockData, logsize);
 		}
 		proc_sub_dump_mode = PDISK_MODE_FINISH;
 	}
@@ -672,8 +683,15 @@ void pdisk_render(s32 fullrender)
 
 			dd_setTextColor(255,255,255);
 			dd_setTextPosition(20, 16*6);
-			dd_printText(FALSE, "Saving Disk file as\n");
-			dd_printText(FALSE, DumpPath);
+			if (conf_sdcardwrite == 1)
+			{
+				dd_printText(FALSE, "Calculating CRC32 and\nsaving Disk file as\n");
+				dd_printText(FALSE, DumpPath);
+			}
+			else
+			{
+				dd_printText(FALSE, "Calculating CRC32...\n");
+			}
 
 			pdisk_f_progress(1.0f);
 		}
@@ -732,25 +750,34 @@ void pdisk_render(s32 fullrender)
 			}
 
 			dd_setTextPosition(20, 16*6);
-			if (proc_sub_dump_error != WRITE_ERROR_OK)
+			if (conf_sdcardwrite == 1)
 			{
-				if (proc_sub_dump_error == WRITE_ERROR_FOPEN)
-					dd_printText(FALSE, "f_open() Error");
-				else if (proc_sub_dump_error == WRITE_ERROR_FWRITE)
-					dd_printText(FALSE, "f_write() Error");
-				else if (proc_sub_dump_error == WRITE_ERROR_FCLOSE)
-					dd_printText(FALSE, "f_close() Error");
+				if (proc_sub_dump_error != WRITE_ERROR_OK)
+				{
+					if (proc_sub_dump_error == WRITE_ERROR_FOPEN)
+						dd_printText(FALSE, "f_open() Error");
+					else if (proc_sub_dump_error == WRITE_ERROR_FWRITE)
+						dd_printText(FALSE, "f_write() Error");
+					else if (proc_sub_dump_error == WRITE_ERROR_FCLOSE)
+						dd_printText(FALSE, "f_close() Error");
 
-				sprintf(console_text, " %i", proc_sub_dump_error2);
-				dd_printText(FALSE, console_text);
+					sprintf(console_text, " %i", proc_sub_dump_error2);
+					dd_printText(FALSE, console_text);
+				}
+				else
+				{
+					dd_setTextColor(255,255,255);
+					sprintf(console_text, "CRC32: %08X\n", crc32calc);
+					dd_printText(FALSE, console_text);
+					dd_printText(FALSE, "Disk dumped as\n");
+					dd_printText(FALSE, DumpPath);
+				}
 			}
 			else
 			{
-				dd_setTextColor(255,255,255);
 				sprintf(console_text, "CRC32: %08X\n", crc32calc);
 				dd_printText(FALSE, console_text);
-				dd_printText(FALSE, "Disk dumped as\n");
-				dd_printText(FALSE, DumpPath);
+				dd_printText(FALSE, "Sent Disk Log through USB\nDump 0x3DEC800 bytes from cart.\n");
 			}
 
 			dd_setTextPosition(20, 16*10);

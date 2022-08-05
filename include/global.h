@@ -5,4 +5,6 @@ extern s32 proc_sub_dump_mode;
 extern s32 proc_sub_dump_error;
 extern FRESULT proc_sub_dump_error2;
 
+extern s32 conf_sdcardwrite;
+
 #endif
