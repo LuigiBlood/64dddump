@@ -4,6 +4,7 @@
 #include	"leoctl.h"
 #include	"version.h"
 #include	"asicdrive.h"
+#include	"crc32.h"
 
 char* diskErrorString(s32 error)
 {
@@ -132,7 +133,7 @@ s32 diskLogOutput()
 	rtcRead(&time);
 	size += sprintf((char*)blockData + size, "Dump Date: ");
 	size += diskRTCString((char*)blockData + size, &time);
-	size += sprintf((char*)blockData + size, "\n\n");
+	size += sprintf((char*)blockData + size, "\nCRC32: %08X\n\n", crc32calc);
 
 	if (checkDiskIDOutput())
 	{
