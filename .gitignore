@@ -1,1 +1,4 @@
 /build
+*.log
+*.ndd
+*.z64
