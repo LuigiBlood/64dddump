@@ -56,8 +56,7 @@ void peep_init()
 	proc_sub_dump_mode = PEEP_MODE_INIT;
 	proc_sub_dump_error = 0;
 	proc_sub_dump_error2 = FR_OK;
-	bzero(blockData, PEEP_SIZE*4);
-	crc32calc_start();
+	bzero(blockData, PEEP_SIZE);
 }
 
 void peep_update()
@@ -74,6 +73,7 @@ void peep_update()
 		}
 		if (readControllerPressed() & A_BUTTON)
 		{
+			crc32calc_start();
 			proc_sub_dump_mode = PEEP_MODE_DUMP;
 		}
 	}
@@ -81,13 +81,13 @@ void peep_update()
 	{
 		eepromBlockRead();
 		osWritebackDCacheAll();
-		copyToCartPi(blockData, (char*)peep_dump_offset, PEEP_SIZE*4);
-		crc32calc_procarray(blockData, PEEP_SIZE*4);
+		copyToCartPi(blockData, (char*)peep_dump_offset, PEEP_SIZE);
+		crc32calc_procarray(blockData, PEEP_SIZE);
 		peep_dump_offset += PEEP_SIZE;
 		if (peep_dump_offset >= PEEP_SIZE)
 		{
 			crc32calc_end();
-			proc_sub_dump_mode = PEEP_MODE_FINISH;
+			proc_sub_dump_mode = PEEP_MODE_SAVE;
 		}
 	}
 	else if (proc_sub_dump_mode == PEEP_MODE_SAVE)
@@ -98,7 +98,7 @@ void peep_update()
 		if (conf_sdcardwrite == 1)
 		{
 			makeUniqueFilename("/dump/DDEEP", "rom");
-			fr = writeFileROM(DumpPath, PEEP_SIZE*4, &proc);
+			fr = writeFileROM(DumpPath, PEEP_SIZE, &proc);
 			if (fr != FR_OK) proc_sub_dump_error = proc;
 			proc_sub_dump_error2 = fr;
 		}
