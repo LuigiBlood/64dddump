@@ -132,7 +132,7 @@ void pmain_render(s32 fullrender)
 
 		if (conf_sdcardwrite == -1)
 		{
-			dd_printText(FALSE, "No SD Card Access");
+			dd_printText(FALSE, "USB UNFLoader Mode");
 		}
 		else if (conf_sdcardwrite == 0)
 		{
@@ -143,14 +143,18 @@ void pmain_render(s32 fullrender)
 			dd_printText(FALSE, "SD Card Write Mode");
 		}
 
+		dd_setTextPosition(20, 200);
 		if (conf_sdcardwrite != -1)
 		{
-			dd_setTextPosition(20, 200);
 			dd_printText(FALSE, "(Press ");
 			dd_setTextColor(60,60,60);
 			dd_printText(FALSE, "L Button");
 			dd_setTextColor(255,255,255);
 			dd_printText(FALSE, " to change Write mode)");
+		}
+		else
+		{
+			dd_printText(FALSE, "No SD Card Access");
 		}
 	}
 
