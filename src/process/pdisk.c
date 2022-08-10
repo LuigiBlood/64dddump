@@ -54,6 +54,7 @@ s32 pdisk_error_count;	//Error Counter
 s32 pdisk_error_fatal;	//Fatal Error Sense
 s32 pdisk_skip_lba_end;	//Skip LBA End
 s32 pdisk_isdiskidgood;	//Disk ID Good for output
+s32 pdisk_logsize;		//Log Byte Size
 
 #define PDISK_ERROR_COUNT_SKIP_MAX	5
 s32 pdisk_error_count_skip;
@@ -371,7 +372,7 @@ void pdisk_update()
 	{
 		//Mode: Save to SD Card
 		FRESULT fr;
-		int proc, logsize;
+		int proc;
 
 		pdisk_e_crc32();
 
@@ -402,16 +403,19 @@ void pdisk_update()
 			else
 			{
 				//Produce Log
-				logsize = diskLogOutput();
-				fr = writeFileRAM(blockData, LogPath, logsize, &proc);
+				pdisk_logsize = diskLogOutput();
+				fr = writeFileRAM(blockData, LogPath, pdisk_logsize, &proc);
 				if (fr != FR_OK) proc_sub_dump_error = proc;
 				proc_sub_dump_error2 = fr;
+
+				usb_write(DATATYPE_TEXT, blockData, pdisk_logsize);
 			}
 		}
 		else
 		{
 			//USB UNFLoader
-			usb_write(DATATYPE_TEXT, blockData, logsize);
+			pdisk_logsize = diskLogOutput();
+			usb_write(DATATYPE_TEXT, blockData, pdisk_logsize);
 		}
 		proc_sub_dump_mode = PDISK_MODE_FINISH;
 	}
@@ -429,6 +433,11 @@ void pdisk_update()
 	{
 		//Mode: Dump is done
 		//Interaction
+		if (readControllerPressed() & L_TRIG)
+		{
+			usb_write(DATATYPE_TEXT, blockData, pdisk_logsize);
+		}
+
 		if (readControllerPressed() & A_BUTTON)
 		{
 			process_change(PROCMODE_PMAIN);
@@ -787,6 +796,14 @@ void pdisk_render(s32 fullrender)
 			dd_printText(FALSE, "A Button");
 			dd_setTextColor(255,255,255);
 			dd_printText(FALSE, " to go back to menu.");
+
+
+			dd_setTextPosition(20, 16*11);
+			dd_printText(FALSE, "Press ");
+			dd_setTextColor(60,60,60);
+			dd_printText(FALSE, "L Button");
+			dd_setTextColor(255,255,255);
+			dd_printText(FALSE, " to resend log via USB.");
 
 			pdisk_f_progress(1.0f);
 		}
