@@ -31,6 +31,7 @@
 #define PDISK_MODE_CONF3	5
 #define PDISK_MODE_PREP		6
 #define PDISK_MODE_DUMP		7
+#define PDISK_MODE_CRC		12
 #define PDISK_MODE_SAVE		8
 #define PDISK_MODE_FATAL	9
 #define PDISK_MODE_FINISH	10
@@ -333,6 +334,7 @@ void pdisk_update()
 						}
 					}
 					pdisk_cur_lba++;
+				case LEO_SENSE_LBA_OUT_OF_RANGE:
 					break;
 			}
 		}
@@ -365,33 +367,37 @@ void pdisk_update()
 		if (pdisk_cur_lba > MAX_P_LBA)
 		{
 			diskBreakMotor();
-			if (conf_sdcardwrite == 1)
-			{
-				//Write to SD Card
-				if (pdisk_isdiskidgood)
-				{
-					char console_text[64];
-
-					sprintf(console_text, "/dump/DDDisk-%c%c%c%c%i-%i",
-						_diskId.gameName[0], _diskId.gameName[1], _diskId.gameName[2], _diskId.gameName[3],
-						_diskId.gameVersion, _diskId.diskNumber);
-					makeUniqueFilename(console_text, "ndd");
-				}
-				else
-				{
-					makeUniqueFilename("/dump/DDDisk", "ndd");
-				}
-			}
-			proc_sub_dump_mode = PDISK_MODE_SAVE;
+			proc_sub_dump_mode = PDISK_MODE_CRC;
 		}
+	}
+	else if (proc_sub_dump_mode == PDISK_MODE_CRC)
+	{
+		//Mode: Calc CRC32
+		pdisk_e_crc32();
+
+		if (conf_sdcardwrite == 1)
+		{
+			if (pdisk_isdiskidgood)
+			{
+				char console_text[64];
+
+				sprintf(console_text, "/dump/DDDisk-%c%c%c%c%i-%i",
+					_diskId.gameName[0], _diskId.gameName[1], _diskId.gameName[2], _diskId.gameName[3],
+					_diskId.gameVersion, _diskId.diskNumber);
+				makeUniqueFilename(console_text, "ndd");
+			}
+			else
+			{
+				makeUniqueFilename("/dump/DDDisk", "ndd");
+			}
+		}
+		proc_sub_dump_mode = PDISK_MODE_SAVE;
 	}
 	else if (proc_sub_dump_mode == PDISK_MODE_SAVE)
 	{
 		//Mode: Save to SD Card
 		FRESULT fr;
 		int proc;
-
-		pdisk_e_crc32();
 
 		if (conf_sdcardwrite == 1)
 		{
@@ -411,8 +417,6 @@ void pdisk_update()
 				fr = writeFileRAM(blockData, LogPath, pdisk_logsize, &proc);
 				if (fr != FR_OK) proc_sub_dump_error = proc;
 				proc_sub_dump_error2 = fr;
-
-				usb_write(DATATYPE_TEXT, blockData, pdisk_logsize);
 			}
 		}
 		else
@@ -675,6 +679,34 @@ void pdisk_render(s32 fullrender)
 
 			pdisk_f_progress((pdisk_cur_lba / (float)MAX_P_LBA));
 		}
+		else if (proc_sub_dump_mode == PDISK_MODE_CRC)
+		{
+			dd_setTextColor(255,255,255);
+			dd_setTextPosition(20, 16*4);
+			sprintf(console_text, "%i", MAX_P_LBA);
+			dd_printText(FALSE, console_text);
+
+			dd_setTextPosition(58, 16*4);
+			sprintf(console_text, "/%i blocks\n", MAX_P_LBA);
+			dd_printText(FALSE, console_text);
+
+			if (pdisk_error_count)
+			{
+				dd_setTextColor(255,80,25);
+				dd_setTextPosition(20, 16*5);
+				sprintf(console_text, "%i errors found", pdisk_error_count);
+				dd_printText(FALSE, console_text);
+			}
+
+			dd_setTextColor(255,255,255);
+			dd_setTextPosition(20, 16*6);
+			dd_printText(FALSE, "(1/2) Calculating CRC32...\n");
+
+			dd_setTextPosition(20, 16*9);
+			dd_printText(FALSE, "This may take a while.\n");
+
+			pdisk_f_progress(1.0f);
+		}
 		else if (proc_sub_dump_mode == PDISK_MODE_SAVE)
 		{
 			dd_setTextColor(255,255,255);
@@ -698,12 +730,15 @@ void pdisk_render(s32 fullrender)
 			dd_setTextPosition(20, 16*6);
 			if (conf_sdcardwrite == 1)
 			{
-				dd_printText(FALSE, "Calculating CRC32 and\nsaving Disk file as\n");
+				dd_printText(FALSE, "(2/2) Saving Disk file as\n");
 				dd_printText(FALSE, DumpPath);
+
+				dd_setTextPosition(20, 16*9);
+				dd_printText(FALSE, "This may take a long time.\nPlease do not turn off the console.\n");
 			}
 			else
 			{
-				dd_printText(FALSE, "Calculating CRC32...\n");
+				dd_printText(FALSE, "Calculating CRC32 Done.\n");
 			}
 
 			pdisk_f_progress(1.0f);
@@ -793,7 +828,7 @@ void pdisk_render(s32 fullrender)
 				dd_printText(FALSE, "Sent Disk Log through USB\nDump 0x3DEC800 bytes from cart.\n");
 			}
 
-			dd_setTextPosition(20, 16*10);
+			dd_setTextPosition(20, 16*9);
 			dd_setTextColor(255,255,255);
 			dd_printText(FALSE, "Press ");
 			dd_setTextColor(25,25,255);
@@ -802,7 +837,7 @@ void pdisk_render(s32 fullrender)
 			dd_printText(FALSE, " to go back to menu.");
 
 
-			dd_setTextPosition(20, 16*11);
+			dd_setTextPosition(20, 16*10);
 			dd_printText(FALSE, "Press ");
 			dd_setTextColor(60,60,60);
 			dd_printText(FALSE, "L Button");
