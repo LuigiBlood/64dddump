@@ -14,7 +14,7 @@
 .word  0x00000000               /* Checksum 2 (OVERWRITTEN BY MAKEMASK) */
 .word  0x00000000               /* Unknown */
 .word  0x00000000               /* Unknown */
-.ascii "64DD Disk Dumper    "   /* Internal ROM name (Max 20 characters) */
+.ascii "64DD Dump Tool b    "   /* Internal ROM name (Max 20 characters) */
 .word  0x00000000               /* Unknown */
 .byte  0x00, 0x00, 0x00         /* Unknown */
 .ascii "RDMA"                   /* Game ID */
