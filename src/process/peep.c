@@ -87,6 +87,8 @@ void peep_update()
 		if (peep_dump_offset >= PEEP_SIZE)
 		{
 			crc32calc_end();
+			if (conf_sdcardwrite == 1)
+				makeUniqueFilename("/dump/DDEEP", "rom");
 			proc_sub_dump_mode = PEEP_MODE_SAVE;
 		}
 	}
@@ -97,7 +99,6 @@ void peep_update()
 
 		if (conf_sdcardwrite == 1)
 		{
-			makeUniqueFilename("/dump/DDEEP", "rom");
 			fr = writeFileROM(DumpPath, PEEP_SIZE, &proc);
 			if (fr != FR_OK) proc_sub_dump_error = proc;
 			proc_sub_dump_error2 = fr;

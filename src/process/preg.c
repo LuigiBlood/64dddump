@@ -87,6 +87,8 @@ void preg_update()
 		if (preg_dump_offset >= PREG_SIZE)
 		{
 			crc32calc_end();
+			if (conf_sdcardwrite == 1)
+				makeUniqueFilename("/dump/DDReg", "bin");
 			proc_sub_dump_mode = PREG_MODE_SAVE;
 		}
 	}
@@ -97,7 +99,6 @@ void preg_update()
 
 		if (conf_sdcardwrite == 1)
 		{
-			makeUniqueFilename("/dump/DDReg", "bin");
 			fr = writeFileROM(DumpPath, PREG_SIZE, &proc);
 			if (fr != FR_OK) proc_sub_dump_error = proc;
 			proc_sub_dump_error2 = fr;

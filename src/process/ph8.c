@@ -88,6 +88,8 @@ void ph8_update()
 		if (ph8_dump_offset >= PH8_SIZE)
 		{
 			crc32calc_end();
+			if (conf_sdcardwrite == 1)
+				makeUniqueFilename("/dump/DDH8", "rom");
 			proc_sub_dump_mode = PH8_MODE_SAVE;
 		}
 	}
@@ -98,7 +100,6 @@ void ph8_update()
 
 		if (conf_sdcardwrite == 1)
 		{
-			makeUniqueFilename("/dump/DDH8", "rom");
 			fr = writeFileROM(DumpPath, PH8_SIZE, &proc);
 			if (fr != FR_OK) proc_sub_dump_error = proc;
 			proc_sub_dump_error2 = fr;

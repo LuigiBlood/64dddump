@@ -87,6 +87,8 @@ void pipl_update()
 		if (pipl_dump_offset >= PIPL_SIZE)
 		{
 			crc32calc_end();
+			if (conf_sdcardwrite == 1)
+				makeUniqueFilename("/dump/DDIPL", "rom");
 			proc_sub_dump_mode = PIPL_MODE_SAVE;
 		}
 	}
@@ -97,7 +99,6 @@ void pipl_update()
 
 		if (conf_sdcardwrite == 1)
 		{
-			makeUniqueFilename("/dump/DDIPL", "rom");
 			fr = writeFileROM(DumpPath, PIPL_SIZE, &proc);
 			if (fr != FR_OK) proc_sub_dump_error = proc;
 			proc_sub_dump_error2 = fr;

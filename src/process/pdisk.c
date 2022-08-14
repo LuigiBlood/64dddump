@@ -365,6 +365,23 @@ void pdisk_update()
 		if (pdisk_cur_lba > MAX_P_LBA)
 		{
 			diskBreakMotor();
+			if (conf_sdcardwrite == 1)
+			{
+				//Write to SD Card
+				if (pdisk_isdiskidgood)
+				{
+					char console_text[64];
+
+					sprintf(console_text, "/dump/DDDisk-%c%c%c%c%i-%i",
+						_diskId.gameName[0], _diskId.gameName[1], _diskId.gameName[2], _diskId.gameName[3],
+						_diskId.gameVersion, _diskId.diskNumber);
+					makeUniqueFilename(console_text, "ndd");
+				}
+				else
+				{
+					makeUniqueFilename("/dump/DDDisk", "ndd");
+				}
+			}
 			proc_sub_dump_mode = PDISK_MODE_SAVE;
 		}
 	}
@@ -379,19 +396,6 @@ void pdisk_update()
 		if (conf_sdcardwrite == 1)
 		{
 			//Write to SD Card
-			if (pdisk_isdiskidgood)
-			{
-				char console_text[64];
-
-				sprintf(console_text, "/dump/DDDisk-%c%c%c%c%i-%i",
-					_diskId.gameName[0], _diskId.gameName[1], _diskId.gameName[2], _diskId.gameName[3],
-					_diskId.gameVersion, _diskId.diskNumber);
-				makeUniqueFilename(console_text, "ndd");
-			}
-			else
-			{
-				makeUniqueFilename("/dump/DDDisk", "ndd");
-			}
 
 			fr = writeFileROM(DumpPath, PDISK_DISK_SIZE, &proc);
 			if (fr != FR_OK)
