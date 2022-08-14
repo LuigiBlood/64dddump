@@ -9,6 +9,7 @@
 #define WRITE_ERROR_FWRITE	2
 #define WRITE_ERROR_FCLOSE	3
 #define WRITE_ERROR_FSTAT	4
+#define WRITE_ERROR_FMKDIR	5
 
 extern OSMesgQueue dmaMessageQ;
 extern OSPiHandle *pi_handle;

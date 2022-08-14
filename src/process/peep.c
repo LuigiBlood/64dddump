@@ -108,9 +108,19 @@ void peep_update()
 
 		if (conf_sdcardwrite == 1)
 		{
-			fr = writeFileROM(DumpPath, PEEP_SIZE, &proc);
-			if (fr != FR_OK) proc_sub_dump_error = proc;
-			proc_sub_dump_error2 = fr;
+			//Create dump folder if it doesn't exist
+			fr = f_mkdir("dump");
+			if (fr != FR_OK && fr != FR_EXIST)
+			{
+				proc_sub_dump_error = WRITE_ERROR_FMKDIR;
+				proc_sub_dump_error2 = fr;
+			}
+			else
+			{
+				fr = writeFileROM(DumpPath, PEEP_SIZE, &proc);
+				if (fr != FR_OK) proc_sub_dump_error = proc;
+				proc_sub_dump_error2 = fr;
+			}
 		}
 		proc_sub_dump_mode = PEEP_MODE_FINISH;
 	}
@@ -199,6 +209,8 @@ void peep_render(s32 fullrender)
 						dd_printText(FALSE, "f_write() Error");
 					else if (proc_sub_dump_error == WRITE_ERROR_FCLOSE)
 						dd_printText(FALSE, "f_close() Error");
+					else if (proc_sub_dump_error == WRITE_ERROR_FMKDIR)
+						dd_printText(FALSE, "f_mkdir() Error");
 
 					sprintf(console_text, " %i", proc_sub_dump_error2);
 					dd_printText(FALSE, console_text);

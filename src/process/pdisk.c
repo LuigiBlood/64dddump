@@ -424,20 +424,29 @@ void pdisk_update()
 		{
 			//Write to SD Card
 
-			fr = writeFileROM(DumpPath, PDISK_DISK_SIZE, &proc);
-			if (fr != FR_OK)
+			//Create dump folder if it doesn't exist
+			fr = f_mkdir("dump");
+			if (fr != FR_OK && fr != FR_EXIST)
 			{
-				proc_sub_dump_error = proc;
+				proc_sub_dump_error = WRITE_ERROR_FMKDIR;
 				proc_sub_dump_error2 = fr;
-				proc_sub_dump_mode = PDISK_MODE_FINISH;
 			}
 			else
 			{
-				//Produce Log
-				pdisk_logsize = diskLogOutput();
-				fr = writeFileRAM(blockData, LogPath, pdisk_logsize, &proc);
-				if (fr != FR_OK) proc_sub_dump_error = proc;
-				proc_sub_dump_error2 = fr;
+				fr = writeFileROM(DumpPath, PDISK_DISK_SIZE, &proc);
+				if (fr != FR_OK)
+				{
+					proc_sub_dump_error = proc;
+					proc_sub_dump_error2 = fr;
+				}
+				else
+				{
+					//Produce Log
+					pdisk_logsize = diskLogOutput();
+					fr = writeFileRAM(blockData, LogPath, pdisk_logsize, &proc);
+					if (fr != FR_OK) proc_sub_dump_error = proc;
+					proc_sub_dump_error2 = fr;
+				}
 			}
 		}
 		else
@@ -829,6 +838,8 @@ void pdisk_render(s32 fullrender)
 						dd_printText(FALSE, "f_write() Error");
 					else if (proc_sub_dump_error == WRITE_ERROR_FCLOSE)
 						dd_printText(FALSE, "f_close() Error");
+					else if (proc_sub_dump_error == WRITE_ERROR_FMKDIR)
+						dd_printText(FALSE, "f_mkdir() Error");
 
 					sprintf(console_text, " %i", proc_sub_dump_error2);
 					dd_printText(FALSE, console_text);
