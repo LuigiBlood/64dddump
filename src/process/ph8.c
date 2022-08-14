@@ -89,7 +89,16 @@ void ph8_update()
 		{
 			crc32calc_end();
 			if (conf_sdcardwrite == 1)
-				makeUniqueFilename("/dump/DDH8", "rom");
+			{
+				if (drivetype == LEO_DRIVE_TYPE_RETAIL)
+					makeUniqueFilename("/dump/DDH8_R", "rom");
+				else if (drivetype == LEO_DRIVE_TYPE_DEV)
+					makeUniqueFilename("/dump/DDH8_D", "rom");
+				else if (drivetype == LEO_DRIVE_TYPE_WRITER)
+					makeUniqueFilename("/dump/DDH8_W", "rom");
+				else
+					makeUniqueFilename("/dump/DDH8_U", "rom");
+			}
 			proc_sub_dump_mode = PH8_MODE_SAVE;
 		}
 	}

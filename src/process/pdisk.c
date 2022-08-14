@@ -381,9 +381,30 @@ void pdisk_update()
 			{
 				char console_text[64];
 
-				sprintf(console_text, "/dump/DDDisk-%c%c%c%c%i-%i",
-					_diskId.gameName[0], _diskId.gameName[1], _diskId.gameName[2], _diskId.gameName[3],
-					_diskId.gameVersion, _diskId.diskNumber);
+				if (drivetype == LEO_DRIVE_TYPE_RETAIL)
+				{
+					sprintf(console_text, "/dump/DDDiskR-%c%c%c%c%i-%i",
+						_diskId.gameName[0], _diskId.gameName[1], _diskId.gameName[2], _diskId.gameName[3],
+						_diskId.gameVersion, _diskId.diskNumber);
+				}
+				else if (drivetype == LEO_DRIVE_TYPE_DEV)
+				{
+					sprintf(console_text, "/dump/DDDiskD-%c%c%c%c%i-%i",
+						_diskId.gameName[0], _diskId.gameName[1], _diskId.gameName[2], _diskId.gameName[3],
+						_diskId.gameVersion, _diskId.diskNumber);
+				}
+				else if (drivetype == LEO_DRIVE_TYPE_WRITER)
+				{
+					sprintf(console_text, "/dump/DDDiskW-%c%c%c%c%i-%i",
+						_diskId.gameName[0], _diskId.gameName[1], _diskId.gameName[2], _diskId.gameName[3],
+						_diskId.gameVersion, _diskId.diskNumber);
+				}
+				else
+				{
+					sprintf(console_text, "/dump/DDDiskU-%c%c%c%c%i-%i",
+						_diskId.gameName[0], _diskId.gameName[1], _diskId.gameName[2], _diskId.gameName[3],
+						_diskId.gameVersion, _diskId.diskNumber);
+				}
 				makeUniqueFilename(console_text, "ndd");
 			}
 			else

@@ -19,7 +19,6 @@
 
 #define PMAIN_SELECT_MIN	0
 #define PMAIN_SELECT_MAX	4
-s32 drivetype;
 s32 select;
 s32 iplrompresent;
 

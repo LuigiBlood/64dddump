@@ -88,7 +88,16 @@ void preg_update()
 		{
 			crc32calc_end();
 			if (conf_sdcardwrite == 1)
-				makeUniqueFilename("/dump/DDReg", "bin");
+			{
+				if (drivetype == LEO_DRIVE_TYPE_RETAIL)
+					makeUniqueFilename("/dump/DDReg_R", "rom");
+				else if (drivetype == LEO_DRIVE_TYPE_DEV)
+					makeUniqueFilename("/dump/DDReg_D", "rom");
+				else if (drivetype == LEO_DRIVE_TYPE_WRITER)
+					makeUniqueFilename("/dump/DDReg_W", "rom");
+				else
+					makeUniqueFilename("/dump/DDReg_U", "rom");
+			}
 			proc_sub_dump_mode = PREG_MODE_SAVE;
 		}
 	}

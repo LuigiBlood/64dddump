@@ -88,7 +88,16 @@ void pipl_update()
 		{
 			crc32calc_end();
 			if (conf_sdcardwrite == 1)
-				makeUniqueFilename("/dump/DDIPL", "rom");
+			{
+				if (drivetype == LEO_DRIVE_TYPE_RETAIL)
+					makeUniqueFilename("/dump/DDIPL_R", "rom");
+				else if (drivetype == LEO_DRIVE_TYPE_DEV)
+					makeUniqueFilename("/dump/DDIPL_D", "rom");
+				else if (drivetype == LEO_DRIVE_TYPE_WRITER)
+					makeUniqueFilename("/dump/DDIPL_W", "rom");
+				else
+					makeUniqueFilename("/dump/DDIPL_U", "rom");
+			}
 			proc_sub_dump_mode = PIPL_MODE_SAVE;
 		}
 	}
