@@ -96,27 +96,16 @@ void pmain_render(s32 fullrender)
 				dd_setTextColor(128,25,25);
 				dd_printText(FALSE, "No Drive found\n");
 		}
-
-		if (drivetype >= LEO_DRIVE_TYPE_RETAIL || iplrompresent)
-		{
-			dd_setTextColor(255,255,255);
-			dd_printText(FALSE, "\nSelect what to dump:");
-		}
-
-		if (drivetype < LEO_DRIVE_TYPE_RETAIL && !iplrompresent)
-		{
-			dd_setTextPosition(40, 100-(16*2));
-
-			dd_setTextColor(255,255,255);
-			dd_printText(TRUE, "This tool is only intended\nfor 64DD owners.\n\nPlease power off the Nintendo 64\nand insert a 64DD Disk Drive\nor/and an IPL ROM Cartridge.");
-		}
 	}
 
 	if (drivetype >= LEO_DRIVE_TYPE_RETAIL || iplrompresent)
 	{
-		dd_setTextPosition(80, 84);
-
 		//Menu
+		dd_setTextPosition(20, 16*3);
+		dd_setTextColor(255,255,255);
+		dd_printText(FALSE, "\nSelect what to dump:");
+
+		dd_setTextPosition(80, 84);
 		if (select == 0) dd_setTextColor(0,255,0);
 		else if (drivetype < LEO_DRIVE_TYPE_RETAIL) dd_setTextColor(128,25,25);
 		else dd_setTextColor(25,25,25);
@@ -187,5 +176,13 @@ void pmain_render(s32 fullrender)
 		{
 			dd_printText(FALSE, "No SD Card Access");
 		}
+	}
+	else
+	{
+		//No 64DD/IPL ROM Found
+		dd_setTextPosition(40, 100-(16*2));
+
+		dd_setTextColor(255,255,255);
+		dd_printText(TRUE, "This tool is only intended\nfor 64DD owners.\n\nPlease power off the Nintendo 64\nand insert a 64DD Disk Drive\nor/and an IPL ROM Cartridge.");
 	}
 }
