@@ -105,10 +105,10 @@ void pmain_render(s32 fullrender)
 
 		if (drivetype < LEO_DRIVE_TYPE_RETAIL && !iplrompresent)
 		{
-			dd_setTextPosition(40, 100);
+			dd_setTextPosition(40, 100-(16*2));
 
 			dd_setTextColor(255,255,255);
-			dd_printText(TRUE, "Please power off the Nintendo 64\nand insert a 64DD Disk Drive\nor/and an IPL ROM Cartridge.");
+			dd_printText(TRUE, "This tool is only intended\nfor 64DD owners.\n\nPlease power off the Nintendo 64\nand insert a 64DD Disk Drive\nor/and an IPL ROM Cartridge.");
 		}
 	}
 
