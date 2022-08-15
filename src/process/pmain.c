@@ -110,7 +110,39 @@ void pmain_render(s32 fullrender)
 			dd_setTextColor(255,255,255);
 			dd_printText(TRUE, "Please power off the Nintendo 64\nand insert a 64DD Disk Drive\nor/and an IPL ROM Cartridge.");
 		}
+	}
 
+	if (drivetype >= LEO_DRIVE_TYPE_RETAIL || iplrompresent)
+	{
+		dd_setTextPosition(80, 84);
+
+		//Menu
+		if (select == 0) dd_setTextColor(0,255,0);
+		else if (drivetype < LEO_DRIVE_TYPE_RETAIL) dd_setTextColor(128,25,25);
+		else dd_setTextColor(25,25,25);
+		dd_printText(TRUE, "Dump Disk\n");
+
+		if (select == 1) dd_setTextColor(0,255,0);
+		else if (!iplrompresent) dd_setTextColor(128,25,25);
+		else dd_setTextColor(25,25,25);
+		dd_printText(TRUE, "Dump IPL ROM\n");
+
+		if (select == 2) dd_setTextColor(0,255,0);
+		else if (drivetype < LEO_DRIVE_TYPE_RETAIL) dd_setTextColor(128,25,25);
+		else dd_setTextColor(25,25,25);
+		dd_printText(TRUE, "Dump H8 ROM\n");
+
+		if (select == 3) dd_setTextColor(0,255,0);
+		else if (drivetype < LEO_DRIVE_TYPE_RETAIL) dd_setTextColor(128,25,25);
+		else dd_setTextColor(25,25,25);
+		dd_printText(TRUE, "Dump EEPROM\n");
+
+		if (select == 4) dd_setTextColor(0,255,0);
+		else if (drivetype < LEO_DRIVE_TYPE_RETAIL) dd_setTextColor(128,25,25);
+		else dd_setTextColor(25,25,25);
+		dd_printText(TRUE, "Dump Registers\n");
+
+		//Flashcart + Mode
 		dd_setTextPosition(20, 184);
 		dd_setTextColor(255,255,255);
 		switch (cart_type)
@@ -155,35 +187,5 @@ void pmain_render(s32 fullrender)
 		{
 			dd_printText(FALSE, "No SD Card Access");
 		}
-	}
-
-	if (drivetype >= LEO_DRIVE_TYPE_RETAIL || iplrompresent)
-	{
-		dd_setTextPosition(80, 84);
-
-		if (select == 0) dd_setTextColor(0,255,0);
-		else if (drivetype < LEO_DRIVE_TYPE_RETAIL) dd_setTextColor(128,25,25);
-		else dd_setTextColor(25,25,25);
-		dd_printText(TRUE, "Dump Disk\n");
-
-		if (select == 1) dd_setTextColor(0,255,0);
-		else if (!iplrompresent) dd_setTextColor(128,25,25);
-		else dd_setTextColor(25,25,25);
-		dd_printText(TRUE, "Dump IPL ROM\n");
-
-		if (select == 2) dd_setTextColor(0,255,0);
-		else if (drivetype < LEO_DRIVE_TYPE_RETAIL) dd_setTextColor(128,25,25);
-		else dd_setTextColor(25,25,25);
-		dd_printText(TRUE, "Dump H8 ROM\n");
-
-		if (select == 3) dd_setTextColor(0,255,0);
-		else if (drivetype < LEO_DRIVE_TYPE_RETAIL) dd_setTextColor(128,25,25);
-		else dd_setTextColor(25,25,25);
-		dd_printText(TRUE, "Dump EEPROM\n");
-
-		if (select == 4) dd_setTextColor(0,255,0);
-		else if (drivetype < LEO_DRIVE_TYPE_RETAIL) dd_setTextColor(128,25,25);
-		else dd_setTextColor(25,25,25);
-		dd_printText(TRUE, "Dump Registers\n");
 	}
 }
