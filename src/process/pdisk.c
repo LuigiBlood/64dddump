@@ -409,7 +409,22 @@ void pdisk_update()
 			}
 			else
 			{
-				makeUniqueFilename("/dump/DDDisk", "ndd");
+				if (drivetype == LEO_DRIVE_TYPE_RETAIL)
+				{
+					makeUniqueFilename("/dump/DDDiskR", "ndd");
+				}
+				else if (drivetype == LEO_DRIVE_TYPE_DEV)
+				{
+					makeUniqueFilename("/dump/DDDiskD", "ndd");
+				}
+				else if (drivetype == LEO_DRIVE_TYPE_WRITER)
+				{
+					makeUniqueFilename("/dump/DDDiskW", "ndd");
+				}
+				else
+				{
+					makeUniqueFilename("/dump/DDDiskU", "ndd");
+				}
 			}
 		}
 		proc_sub_dump_mode = PDISK_MODE_SAVE;
