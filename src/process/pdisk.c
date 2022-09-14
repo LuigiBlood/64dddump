@@ -318,7 +318,7 @@ void pdisk_update()
 							pdisk_error_count_skip++;
 							if (pdisk_error_count_skip >= PDISK_ERROR_COUNT_SKIP_MAX)
 							{
-								pdisk_skip_lba_end = pdisk_lba_ram_start;
+								pdisk_skip_lba_end = pdisk_lba_ram_start-1;
 								pdisk_error_count_skip = 0;
 							}
 						}
