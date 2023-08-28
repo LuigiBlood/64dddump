@@ -601,21 +601,21 @@ void pdisk_render(s32 fullrender)
 			if (pdisk_select == 0) dd_setTextColor(0,255,0);
 			else if (pdisk_drivetype != LEO_DRIVE_TYPE_RETAIL) dd_setTextColor(128,25,25);
 			else dd_setTextColor(25,25,25);
-			dd_printText(TRUE, "Dump with Skips (Retail Only)\n");
+			dd_printText(TRUE, "Fast Dump (Fast, Retail Only)\n");
 
 			if (pdisk_select == 1) dd_setTextColor(0,255,0);
 			else dd_setTextColor(25,25,25);
-			dd_printText(TRUE, "Dump Entire Disk\n");
+			dd_printText(TRUE, "Dump Entire Disk (Slow)\n");
 
 			if (pdisk_select == 2) dd_setTextColor(0,255,0);
 			else dd_setTextColor(25,25,25);
 			dd_printText(TRUE, "Dump Entire Disk (Advanced)\n");
 
 			dd_setTextColor(255,255,255);
-			dd_setTextPosition(20, 16*11);
-			if (pdisk_select == 0) dd_printText(TRUE, "Dumps the retail disk, then\ntries to dump unformatted segments,\nif it fails, skips the segment.");
-			else if (pdisk_select == 1) dd_printText(TRUE, "\nDumps the entire disk data and\nbruteforces through bad blocks.");
-			else if (pdisk_select == 2) dd_printText(TRUE, "Dumps the entire disk data and\nbruteforces through bad blocks,\nallows to lower repeated error reads.");
+			dd_setTextPosition(20, 16*10);
+			if (pdisk_select == 0) dd_printText(TRUE, "Recommended.\nDumps the retail disk, then\ntries to dump unformatted segments,\nif it fails, skips the segment.");
+			else if (pdisk_select == 1) dd_printText(TRUE, "\n\nDumps the entire disk data and\nbruteforces through bad blocks.");
+			else if (pdisk_select == 2) dd_printText(TRUE, "\nDumps the entire disk data and\nbruteforces through bad blocks,\nallows to lower repeated error reads.");
 		}
 		else if (proc_sub_dump_mode == PDISK_MODE_CONF3)
 		{
@@ -684,7 +684,9 @@ void pdisk_render(s32 fullrender)
 				dd_setTextColor(50,50,50);
 				dd_printText(FALSE, "START Button");
 				dd_setTextColor(255,255,255);
-				dd_printText(FALSE, " to pause the dump.");
+				dd_printText(FALSE, " to pause the dump,");
+				dd_setTextPosition(20, 16*9);
+				dd_printText(FALSE, "or skip an area.");
 			}
 			else
 			{
