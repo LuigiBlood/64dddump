@@ -145,6 +145,9 @@ void pmain_render(s32 fullrender)
 			case CART_EDX:
 				dd_printText(FALSE, "Everdrive 64X - ");
 				break;
+			case CART_SC:
+				dd_printText(FALSE, "SC64 - ");
+				break;
 			default:
 				dd_printText(FALSE, "Unknown - ");
 				break;

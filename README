@@ -1,12 +1,17 @@
 64DD Dump Tool
 by LuigiBlood
 
-Dumps 64DD Disks, IPL ROM, H8 Controller ROM, EEPROM and Registers to the SD Card.
+Dumps 64DD Disks, IPL ROM, H8 Controller ROM, EEPROM and Registers to the SD Card.  
+Unlike most 64DD software, an Expansion Pak is not required to use this tool.
 
 Compatible with:
 - 64drive
 - Everdrive 64
 - Everdrive 64 X Series
+- SummerCart64 (https://github.com/Polprzewodnikowy/SummerCart64)
+
+NOT Compatible with:
+- ED64 Plus
 
 This version requires the Modern SDK setup that can be found here:
 https://crashoveride95.github.io/n64hbrew/modernsdk/index.html
