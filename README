@@ -13,6 +13,14 @@ Compatible with:
 NOT Compatible with:
 - ED64 Plus
 
+List of external libraries in use:
+- USB UNFLoader (https://github.com/buu342/N64-UNFLoader)
+- libcart (https://github.com/devwizard64/libcart)
+- fatfs (https://github.com/devwizard64/libcart)
+
+
+Building:
+
 This version requires the Modern SDK setup that can be found here:
 https://crashoveride95.github.io/n64hbrew/modernsdk/index.html
 
